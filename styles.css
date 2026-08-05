@@ -83,14 +83,14 @@ body{
 }
 
 .brand{ text-align:center; font-size:44px; font-weight:700; margin:0; line-height:1; color:var(--ink); }
-.tagline{ text-align:center; font-size:10.5px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; margin:-4px 0 14px; font-family:'EB Garamond', serif; }
-.sub{ text-align:center; color:var(--ink-dim); font-size:15px; margin:6px 0 16px; font-style:italic; }
+.tagline{ text-align:center; font-size:10.5px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; margin:-2px 0 16px; font-family:'EB Garamond', serif; }
+.sub{ text-align:center; color:var(--ink-dim); font-size:15px; margin:9px 0 18px; font-style:italic; }
 
 /* ---------- Signature (brand motif + Quill's speaking indicator) ----------
    speechSynthesis exposes no real audio waveform, so "reacting to speech" here
    is a state-driven CSS animation, not amplitude analysis. Every animated
    property is transform/opacity only, so it all runs on the compositor thread. */
-.signature{ display:flex; align-items:center; justify-content:center; gap:8px; margin:14px 0 8px; }
+.signature{ display:flex; align-items:center; justify-content:center; gap:8px; margin:16px 0 10px; }
 .signature.small{ gap:5px; margin:0; }
 .sig-dot{ width:9px; height:9px; border-radius:50%; background:var(--ink); flex-shrink:0; }
 .signature.small .sig-dot{ width:6px; height:6px; }
@@ -125,8 +125,7 @@ body{
 }
 
 /* ---------- Lock screen ---------- */
-#lockScreen{ align-items:center; }
-.dots{ display:flex; justify-content:center; gap:14px; margin:16px 0; }
+.dots{ display:flex; justify-content:center; gap:14px; margin:18px 0; }
 .dot{ width:13px; height:13px; border-radius:50%; border:1.5px solid var(--wine); background:transparent; transition:background 0.15s; }
 .dot.filled{ background:var(--wine); }
 .passcodeMsg{ text-align:center; min-height:18px; color:var(--alert); font-size:13px; margin-bottom:4px; font-style:italic; }
@@ -259,8 +258,11 @@ button:disabled{ opacity:0.5; cursor:default; }
   padding:0; font-weight:400; z-index:5;
 }
 .lockNowBtn{
-  position:absolute; top:12px; left:16px; font-size:14px; color:var(--ink-dim);
-  background:none; border:none; padding:0; font-weight:400; z-index:5;
+  position:absolute; top:10px; left:12px; width:34px; height:34px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; color:var(--wine); background:var(--paper-shadow);
+  border:1px solid rgba(59,42,29,0.15); border-radius:50%; padding:0;
+  font-weight:400; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:5;
 }
 .modalOverlay{
   position:absolute; inset:0; background:rgba(36,22,16,0.82); display:none;
