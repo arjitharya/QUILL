@@ -13,17 +13,24 @@
 <div class="deviceFrame" id="app">
   <div class="page">
 
-    <button class="supportLink" id="supportLink" hidden>Support resources</button>
-    <button class="lockNowBtn" id="lockNowBtn" title="Lock Quill" hidden>&#10022;</button>
+    <button class="lockNowBtn" id="lockNowBtn" title="Lock Quill" hidden>
+      <svg class="lockNowIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+        <line x1="16" y1="8" x2="2" y2="22"></line>
+        <line x1="17.5" y1="15" x2="9" y2="15"></line>
+      </svg>
+      Lock QUILL
+    </button>
 
     <!-- ===================== LOCK SCREEN ===================== -->
     <div class="screen active" id="lockScreen">
       <div class="clasp"></div>
       <h1 class="display brand">Q.U.I.L.L</h1>
+      <p></p>
       <p class="tagline">Your quiet page that listens back</p>
       <div class="signature" id="lockSig">
         <span class="sig-dot"></span>
-        <span class="sig-line"></span>
+        <span class="sig-mouth"></span>
         <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
         <span class="sig-dot"></span>
       </div>
@@ -42,7 +49,7 @@
         <button class="key" data-key="9">9</button>
         <button class="key func" data-key="forgot">Forgot?</button>
         <button class="key" data-key="0">0</button>
-        <button class="key func" data-key="back">Del</button>
+        <button class="key func" data-key="back">Delete</button>
       </div>
       <button class="unlockBtn" id="unlockBtn">Unlock</button>
     </div>
@@ -52,7 +59,7 @@
       <div class="menuHeader">
         <div class="signature small">
           <span class="sig-dot"></span>
-          <span class="sig-line"></span>
+          <span class="sig-mouth"></span>
           <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
           <span class="sig-dot"></span>
         </div>
@@ -81,7 +88,7 @@
       <div class="chatHeader">
         <button class="backBtn" data-screen="menuScreen">Back</button>
         <div class="signature small">
-          <span class="sig-dot"></span><span class="sig-line"></span>
+          <span class="sig-dot"></span><span class="sig-mouth"></span>
           <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
           <span class="sig-dot"></span>
         </div>
@@ -99,7 +106,7 @@
       <div class="chatHeader">
         <button class="backBtn" data-screen="menuScreen">Back</button>
         <div class="signature small" id="voiceSig">
-          <span class="sig-dot"></span><span class="sig-line"></span>
+          <span class="sig-dot"></span><span class="sig-mouth"></span>
           <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
           <span class="sig-dot"></span>
         </div>
@@ -116,7 +123,7 @@
       <div class="chatHeader">
         <button class="backBtn" data-screen="menuScreen">Back</button>
         <div class="signature small">
-          <span class="sig-dot"></span><span class="sig-line"></span>
+          <span class="sig-dot"></span><span class="sig-mouth"></span>
           <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
           <span class="sig-dot"></span>
         </div>
@@ -126,17 +133,6 @@
       <div class="inputRow">
         <textarea id="lightInput" rows="1" placeholder="Say hi..."></textarea>
         <button id="lightSend">Send</button>
-      </div>
-    </div>
-
-    <!-- ===================== SUPPORT MODAL ===================== -->
-    <div class="modalOverlay" id="supportModal">
-      <div class="modalBox">
-        <h3>If things feel like too much right now</h3>
-        <p>Quill can listen, but it can't keep you safe in a crisis. If you're thinking about harming yourself or are in immediate danger, please reach out right now:</p>
-        <p>US &amp; Canada: call or text <strong>988</strong><br>UK &amp; ROI: <strong>116 123</strong> (Samaritans)<br>Elsewhere: search "crisis line" + your country, or contact local emergency services.</p>
-        <p>If there's a person you trust - family, a neighbor, a doctor - reaching out to them matters too, even if it feels hard.</p>
-        <button class="modalClose" id="modalCloseBtn">Close</button>
       </div>
     </div>
 

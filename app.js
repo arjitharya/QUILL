@@ -64,7 +64,6 @@ function openScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   const chrome = id !== "lockScreen";
-  document.getElementById("supportLink").hidden = !chrome;
   document.getElementById("lockNowBtn").hidden = !chrome;
 
   if (id === "journalScreen" || id === "voiceScreen") {
@@ -78,21 +77,9 @@ document.querySelectorAll("[data-screen]").forEach(el => {
   el.addEventListener("click", () => openScreen(el.dataset.screen));
 });
 
-/* ---------- Support modal ---------- */
-document.getElementById("supportLink").addEventListener("click", () => {
-  document.getElementById("supportModal").classList.add("active");
-});
-document.getElementById("modalCloseBtn").addEventListener("click", () => {
-  document.getElementById("supportModal").classList.remove("active");
-});
-document.getElementById("supportModal").addEventListener("click", e => {
-  if (e.target.id === "supportModal") e.target.classList.remove("active");
-});
-
 /* ---------- Passcode lock ---------- */
 const PIN_HASH_KEY = "quill_pin_hash";
-const MIN_PIN_LEN = 4;
-const MAX_PIN_LEN = 6;
+const PIN_LEN = 6;
 
 const lockScreenEl = document.getElementById("lockScreen");
 const lockSubEl = document.getElementById("lockSub");
@@ -115,7 +102,7 @@ async function hashPin(pin) {
 
 function renderLockSub() {
   if (lockState === "setup") {
-    lockSubEl.textContent = "Choose a passcode (4-6 digits)";
+    lockSubEl.textContent = "Choose a passcode (6 digits)";
     unlockBtn.textContent = "Continue";
   } else if (lockState === "confirm") {
     lockSubEl.textContent = "Confirm your passcode";
@@ -128,7 +115,7 @@ function renderLockSub() {
 
 function renderDots() {
   pinDotsEl.innerHTML = "";
-  for (let i = 0; i < MAX_PIN_LEN; i++) {
+  for (let i = 0; i < PIN_LEN; i++) {
     const dot = document.createElement("div");
     dot.className = i < currentPin.length ? "dot filled" : "dot";
     pinDotsEl.appendChild(dot);
@@ -150,8 +137,8 @@ function resetToFreshSetup() {
 }
 
 async function submitPin() {
-  if (currentPin.length < MIN_PIN_LEN) {
-    pinErrorEl.textContent = "Passcode must be at least " + MIN_PIN_LEN + " digits.";
+  if (currentPin.length < PIN_LEN) {
+    pinErrorEl.textContent = "Passcode must be " + PIN_LEN + " digits.";
     return;
   }
 
@@ -217,7 +204,7 @@ document.getElementById("keypad").addEventListener("click", e => {
   } else if (key === "forgot") {
     forgotPasscode();
     return;
-  } else if (currentPin.length < MAX_PIN_LEN) {
+  } else if (currentPin.length < PIN_LEN) {
     currentPin += key;
   }
   renderDots();

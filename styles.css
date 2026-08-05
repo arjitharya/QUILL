@@ -94,8 +94,11 @@ body{
 .signature.small{ gap:5px; margin:0; }
 .sig-dot{ width:9px; height:9px; border-radius:50%; background:var(--ink); flex-shrink:0; }
 .signature.small .sig-dot{ width:6px; height:6px; }
-.sig-line{ width:72px; height:2px; background:var(--ink); border-radius:1px; }
-.signature.small .sig-line{ width:30px; }
+.sig-mouth{
+  width:30px; height:15px; border:2px solid transparent; border-bottom-color:var(--ink);
+  border-radius:0 0 50% 50%; transform-origin:center bottom;
+}
+.signature.small .sig-mouth{ width:16px; height:8px; border-width:1.5px; }
 .sig-wave{ display:none; align-items:center; gap:3px; height:22px; }
 .signature.small .sig-wave{ height:14px; gap:2px; }
 .sig-wave span{
@@ -114,14 +117,20 @@ body{
   50%{ transform:scaleY(1); }
 }
 
-.signature.listening .sig-line, .signature.thinking .sig-line, .signature.talking .sig-line{ display:none; }
-.signature.listening .sig-wave, .signature.thinking .sig-wave, .signature.talking .sig-wave{ display:flex; }
+.signature.listening .sig-mouth, .signature.thinking .sig-mouth{ display:none; }
+.signature.listening .sig-wave, .signature.thinking .sig-wave{ display:flex; }
 .signature.listening .sig-wave span{ background:var(--wine); animation-duration:0.55s; }
 .signature.thinking .sig-wave span{ background:var(--brass); animation-duration:1.3s; }
-.signature.talking .sig-wave span{ background:var(--ink); animation-duration:0.9s; }
+
+.signature.talking .sig-mouth{ animation:mouthTalk 0.4s ease-in-out infinite; }
+@keyframes mouthTalk{
+  0%, 100%{ transform:scaleY(0.5); }
+  50%{ transform:scaleY(1.7); }
+}
 
 @media (prefers-reduced-motion: reduce){
   .sig-wave span{ animation:none; transform:scaleY(0.55); }
+  .signature.talking .sig-mouth{ animation:none; }
 }
 
 /* ---------- Lock screen ---------- */
@@ -178,12 +187,15 @@ body{
 .disclaimer{ text-align:center; font-size:11px; color:var(--ink-dim); margin-top:auto; line-height:1.4; font-style:italic; }
 
 /* ---------- Chat screens ---------- */
-.chatHeader{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.chatHeader{ display:flex; align-items:center; gap:16px; margin-bottom:12px; position:relative; min-height:24px; }
 .backBtn{
   background:none; border:none; color:var(--wine); font-size:14px; letter-spacing:0.5px;
   cursor:pointer; padding:4px 0; font-family:'EB Garamond', serif; font-weight:600;
 }
-.chatTitle{ font-family:'Caveat', cursive; font-size:24px; font-weight:700; color:var(--ink); }
+.chatTitle{
+  font-family:'Caveat', cursive; font-size:24px; font-weight:700; color:var(--ink);
+  position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
+}
 
 .chatLog{
   flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:10px;
@@ -251,28 +263,14 @@ button:disabled{ opacity:0.5; cursor:default; }
   .micBtn.listening{ animation:none; }
 }
 
-/* ---------- Support link, lock button & modal ---------- */
-.supportLink{
-  position:absolute; top:14px; right:16px; font-size:11px; color:var(--ink-dim);
-  text-decoration:underline; background:none; border:none; font-family:'EB Garamond', serif;
-  padding:0; font-weight:400; z-index:5;
-}
+/* ---------- Lock button ---------- */
 .lockNowBtn{
-  position:absolute; top:10px; left:12px; width:34px; height:34px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:18px; color:var(--wine); background:var(--paper-shadow);
-  border:1px solid rgba(59,42,29,0.15); border-radius:50%; padding:0;
-  font-weight:400; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:5;
+  position:absolute; top:10px; right:14px;
+  display:flex; align-items:center; gap:6px;
+  font-size:12.5px; font-weight:600; letter-spacing:0.2px; color:var(--wine);
+  background:var(--paper-shadow); border:1px solid rgba(59,42,29,0.15);
+  border-radius:20px; padding:7px 12px; font-family:'EB Garamond', serif;
+  cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.15); z-index:5;
 }
-.modalOverlay{
-  position:absolute; inset:0; background:rgba(36,22,16,0.82); display:none;
-  align-items:center; justify-content:center; padding:24px; z-index:20; border-radius:14px;
-}
-@media (min-width: 700px) and (min-height: 700px){
-  .modalOverlay{ border-radius:26px; }
-}
-.modalOverlay.active{ display:flex; }
-.modalBox{ background:var(--paper); border-radius:10px; padding:22px; border:1px solid rgba(59,42,29,0.2); }
-.modalBox h3{ margin:0 0 10px; font-family:'Caveat', cursive; font-size:24px; color:var(--wine); }
-.modalBox p{ font-size:13.5px; line-height:1.5; color:var(--ink); margin:0 0 8px; font-family:'EB Garamond', serif; }
-.modalClose{ margin-top:10px; width:100%; }
+.lockNowBtn[hidden]{ display:none; }
+.lockNowIcon{ width:14px; height:14px; flex-shrink:0; }

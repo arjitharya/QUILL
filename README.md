@@ -6,7 +6,7 @@ remembers, and stays. Think of Quill as a locked diary that talks back.
 ## Features
 
 - **Passcode-locked diary.** The app opens to a numeric keypad, like a diary with a clasp on it.
-  The first time you open it, you choose your own passcode (4-6 digits) - nobody else can get in
+  The first time you open it, you choose your own passcode (6 digits) - nobody else can get in
   without it, and nothing is sent anywhere until you unlock.
 - **Three ways in, from one menu.** After unlocking you land on a menu with three modes:
   - **Journal** - type to Quill like you would text a friend.
