@@ -1,0 +1,276 @@
+:root{
+  color-scheme: dark;
+  --leather:#3E2A1F;
+  --leather-dark:#241610;
+  --paper:#F4E9CE;
+  --paper-shadow:#E4D3A8;
+  --ink:#3B2A1D;
+  --ink-dim:#8A7458;
+  --brass:#AD8A54;
+  --wine:#7A3030;
+  --wine-soft:#9C5252;
+  --moss:#5C6B4A;
+  --alert:#9C3B2E;
+  --radius:14px;
+}
+*{ box-sizing:border-box; }
+html, body{
+  height:100%;
+  margin:0;
+  overflow:hidden;
+}
+body{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle at 50% 0%, #2E1D14 0%, var(--leather-dark) 60%);
+  color:var(--ink);
+  font-family:'EB Garamond', serif;
+}
+.display{ font-family:'Caveat', cursive; }
+
+/* The whole app lives inside the leather cover: edge-to-edge on a phone,
+   a fixed tablet-sized card centered on anything roomy enough. */
+.deviceFrame{
+  width:100%;
+  height:100vh;
+  height:100dvh;
+  background:var(--leather);
+  padding:14px;
+  display:flex;
+  overflow:hidden;
+}
+@media (min-width: 700px) and (min-height: 700px){
+  .deviceFrame{
+    width:440px;
+    height:820px;
+    border-radius:26px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.55);
+  }
+}
+
+/* The page: aged paper insert, faint ruled lines and a red margin rule */
+.page{
+  background:var(--paper);
+  background-image:repeating-linear-gradient(to bottom, transparent 0 27px, rgba(59,42,29,0.07) 27px 28px);
+  border-radius:14px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding:26px 22px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:inset 0 0 40px rgba(59,42,29,0.08);
+}
+.page::before{
+  content:""; position:absolute; left:38px; top:0; bottom:0; width:1px;
+  background:rgba(122,48,48,0.22); pointer-events:none;
+}
+
+/* ---------- Screens ---------- */
+.screen{ display:none; flex-direction:column; flex:1; min-height:0; animation:fadeIn 0.35s ease; }
+.screen.active{ display:flex; }
+@keyframes fadeIn{
+  from{ opacity:0; transform:translateY(6px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+/* ---------- The clasp (lock screen ornament) ---------- */
+.clasp{ width:44px; height:16px; background:var(--brass); border-radius:4px; margin:0 auto 16px; position:relative; box-shadow:0 2px 3px rgba(0,0,0,0.25); }
+.clasp::after{
+  content:""; position:absolute; left:50%; top:50%; width:16px; height:16px; border-radius:50%;
+  background:var(--paper); border:2px solid var(--leather); transform:translate(-50%,-50%);
+}
+
+.brand{ text-align:center; font-size:44px; font-weight:700; margin:0; line-height:1; color:var(--ink); }
+.tagline{ text-align:center; font-size:10.5px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; margin:-4px 0 14px; font-family:'EB Garamond', serif; }
+.sub{ text-align:center; color:var(--ink-dim); font-size:15px; margin:6px 0 16px; font-style:italic; }
+
+/* ---------- Signature (brand motif + Quill's speaking indicator) ----------
+   speechSynthesis exposes no real audio waveform, so "reacting to speech" here
+   is a state-driven CSS animation, not amplitude analysis. Every animated
+   property is transform/opacity only, so it all runs on the compositor thread. */
+.signature{ display:flex; align-items:center; justify-content:center; gap:8px; margin:14px 0 8px; }
+.signature.small{ gap:5px; margin:0; }
+.sig-dot{ width:9px; height:9px; border-radius:50%; background:var(--ink); flex-shrink:0; }
+.signature.small .sig-dot{ width:6px; height:6px; }
+.sig-line{ width:72px; height:2px; background:var(--ink); border-radius:1px; }
+.signature.small .sig-line{ width:30px; }
+.sig-wave{ display:none; align-items:center; gap:3px; height:22px; }
+.signature.small .sig-wave{ height:14px; gap:2px; }
+.sig-wave span{
+  width:3px; height:20px; border-radius:2px; background:var(--ink);
+  transform:scaleY(0.2); transform-origin:center;
+  animation:sigwave 0.9s ease-in-out infinite;
+}
+.signature.small .sig-wave span{ width:2px; height:12px; }
+.sig-wave span:nth-child(1){ animation-delay:0s; }
+.sig-wave span:nth-child(2){ animation-delay:0.12s; }
+.sig-wave span:nth-child(3){ animation-delay:0.24s; }
+.sig-wave span:nth-child(4){ animation-delay:0.12s; }
+.sig-wave span:nth-child(5){ animation-delay:0s; }
+@keyframes sigwave{
+  0%, 100%{ transform:scaleY(0.2); }
+  50%{ transform:scaleY(1); }
+}
+
+.signature.listening .sig-line, .signature.thinking .sig-line, .signature.talking .sig-line{ display:none; }
+.signature.listening .sig-wave, .signature.thinking .sig-wave, .signature.talking .sig-wave{ display:flex; }
+.signature.listening .sig-wave span{ background:var(--wine); animation-duration:0.55s; }
+.signature.thinking .sig-wave span{ background:var(--brass); animation-duration:1.3s; }
+.signature.talking .sig-wave span{ background:var(--ink); animation-duration:0.9s; }
+
+@media (prefers-reduced-motion: reduce){
+  .sig-wave span{ animation:none; transform:scaleY(0.55); }
+}
+
+/* ---------- Lock screen ---------- */
+#lockScreen{ align-items:center; }
+.dots{ display:flex; justify-content:center; gap:14px; margin:16px 0; }
+.dot{ width:13px; height:13px; border-radius:50%; border:1.5px solid var(--wine); background:transparent; transition:background 0.15s; }
+.dot.filled{ background:var(--wine); }
+.passcodeMsg{ text-align:center; min-height:18px; color:var(--alert); font-size:13px; margin-bottom:4px; font-style:italic; }
+
+.keypad{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:auto; }
+.key{
+  background:var(--paper-shadow); color:var(--ink); border:1px solid rgba(59,42,29,0.15);
+  border-radius:10px; padding:14px 0; font-size:19px; font-family:'EB Garamond', serif;
+  cursor:pointer; transition:background 0.15s;
+}
+.key.func{ color:var(--wine); font-size:13px; letter-spacing:0.5px; }
+
+.unlockBtn{
+  width:100%; margin-top:14px; background:var(--wine); border:none; border-radius:10px;
+  padding:12px; font-size:1rem; font-weight:700; color:#FBF1E4; cursor:pointer; font-family:'EB Garamond', serif;
+}
+
+#lockScreen.shake{ animation:shake 0.35s ease-in-out; }
+@keyframes shake{
+  0%, 100%{ transform:translateX(0); }
+  20%{ transform:translateX(-10px); }
+  40%{ transform:translateX(8px); }
+  60%{ transform:translateX(-6px); }
+  80%{ transform:translateX(4px); }
+}
+
+/* ---------- Menu screen (table of contents) ---------- */
+.menuHeader{ text-align:center; margin-bottom:18px; }
+.card{
+  background:var(--paper-shadow);
+  border-radius:10px;
+  padding:16px 18px 16px 20px;
+  margin-bottom:12px;
+  cursor:pointer;
+  position:relative;
+  width:100%;
+  border:1px solid rgba(59,42,29,0.12);
+  color:var(--ink);
+  text-align:left;
+  font-family:inherit;
+  transition:transform 0.15s, background 0.15s;
+}
+.card::before{
+  content:""; position:absolute; left:0; top:10px; bottom:10px; width:4px;
+  background:var(--wine); border-radius:0 3px 3px 0;
+}
+.card:hover{ transform:translateX(3px); background:#E9D9AC; }
+.card .label{ font-family:'Caveat', cursive; font-size:22px; font-weight:700; color:var(--ink); }
+.card .desc{ font-size:12.5px; color:var(--ink-dim); margin-top:2px; font-style:italic; }
+.disclaimer{ text-align:center; font-size:11px; color:var(--ink-dim); margin-top:auto; line-height:1.4; font-style:italic; }
+
+/* ---------- Chat screens ---------- */
+.chatHeader{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.backBtn{
+  background:none; border:none; color:var(--wine); font-size:14px; letter-spacing:0.5px;
+  cursor:pointer; padding:4px 0; font-family:'EB Garamond', serif; font-weight:600;
+}
+.chatTitle{ font-family:'Caveat', cursive; font-size:24px; font-weight:700; color:var(--ink); }
+
+.chatLog{
+  flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:10px;
+  padding:6px 2px 12px;
+}
+.dateDivider{
+  align-self:center; color:var(--ink-dim); font-size:11px; letter-spacing:0.05em;
+  text-transform:uppercase; margin:6px 0; font-style:italic;
+}
+.msg{
+  max-width:82%; padding:10px 14px; font-size:15px; line-height:1.5;
+  font-family:'EB Garamond', serif; white-space:pre-wrap; animation:msgIn 0.25s ease-out;
+}
+@keyframes msgIn{
+  from{ opacity:0; transform:translateY(6px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+.msg.user{ align-self:flex-end; background:var(--wine-soft); color:#FBF1E4; border-radius:8px 8px 0 8px; }
+.msg.eva{ align-self:flex-start; background:var(--paper-shadow); color:var(--ink); border-radius:8px 8px 8px 0; border:1px solid rgba(59,42,29,0.1); }
+.msg.system{ align-self:center; color:var(--ink-dim); font-size:13px; text-align:center; font-style:italic; }
+.careNote{
+  align-self:flex-start; max-width:82%; background:rgba(92,107,74,0.12); border:1px solid var(--moss);
+  border-radius:8px 8px 8px 0; padding:10px 14px; font-size:13.5px; line-height:1.5; color:var(--ink);
+}
+
+.thinkingDots{ display:inline-flex; gap:4px; }
+.thinkingDots span{
+  width:6px; height:6px; border-radius:50%; background:var(--ink-dim);
+  animation:dotBounce 1.2s ease-in-out infinite;
+}
+.thinkingDots span:nth-child(2){ animation-delay:0.15s; }
+.thinkingDots span:nth-child(3){ animation-delay:0.3s; }
+@keyframes dotBounce{
+  0%, 60%, 100%{ opacity:0.35; transform:translateY(0); }
+  30%{ opacity:1; transform:translateY(-4px); }
+}
+
+.inputRow{ display:flex; gap:8px; margin-top:auto; }
+textarea{
+  flex:1; resize:none; border:1px solid rgba(59,42,29,0.25); background:#FBF3DF;
+  color:var(--ink); border-radius:8px; padding:10px 12px; font-family:'EB Garamond', serif;
+  font-size:14.5px; max-height:80px;
+}
+button{
+  background:var(--wine); border:none; border-radius:8px; padding:10px 16px;
+  color:#FBF1E4; font-weight:700; cursor:pointer; font-family:'EB Garamond', serif; font-size:14px;
+}
+button:disabled{ opacity:0.5; cursor:default; }
+
+/* ---------- Voice screen ---------- */
+.micRow{ display:flex; justify-content:center; align-items:center; flex:1; }
+.micBtn{
+  width:84px; height:84px; border-radius:50%; border:2px solid var(--leather);
+  background:var(--wine); box-shadow:0 3px 8px rgba(0,0,0,0.25);
+  transition:transform 0.15s, background-color 0.15s;
+  touch-action:none; user-select:none; padding:0;
+}
+.micBtn:active{ transform:scale(0.94); }
+.micBtn.listening{ background:var(--brass); animation:micPulse 1.2s ease-in-out infinite; }
+@keyframes micPulse{
+  0%, 100%{ transform:scale(1); }
+  50%{ transform:scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce){
+  .micBtn.listening{ animation:none; }
+}
+
+/* ---------- Support link, lock button & modal ---------- */
+.supportLink{
+  position:absolute; top:14px; right:16px; font-size:11px; color:var(--ink-dim);
+  text-decoration:underline; background:none; border:none; font-family:'EB Garamond', serif;
+  padding:0; font-weight:400; z-index:5;
+}
+.lockNowBtn{
+  position:absolute; top:12px; left:16px; font-size:14px; color:var(--ink-dim);
+  background:none; border:none; padding:0; font-weight:400; z-index:5;
+}
+.modalOverlay{
+  position:absolute; inset:0; background:rgba(36,22,16,0.82); display:none;
+  align-items:center; justify-content:center; padding:24px; z-index:20; border-radius:14px;
+}
+@media (min-width: 700px) and (min-height: 700px){
+  .modalOverlay{ border-radius:26px; }
+}
+.modalOverlay.active{ display:flex; }
+.modalBox{ background:var(--paper); border-radius:10px; padding:22px; border:1px solid rgba(59,42,29,0.2); }
+.modalBox h3{ margin:0 0 10px; font-family:'Caveat', cursive; font-size:24px; color:var(--wine); }
+.modalBox p{ font-size:13.5px; line-height:1.5; color:var(--ink); margin:0 0 8px; font-family:'EB Garamond', serif; }
+.modalClose{ margin-top:10px; width:100%; }

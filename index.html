@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Q.U.I.L.L</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="deviceFrame" id="app">
+  <div class="page">
+
+    <button class="supportLink" id="supportLink" hidden>Support resources</button>
+    <button class="lockNowBtn" id="lockNowBtn" title="Lock Quill" hidden>&#10022;</button>
+
+    <!-- ===================== LOCK SCREEN ===================== -->
+    <div class="screen active" id="lockScreen">
+      <div class="clasp"></div>
+      <h1 class="display brand">Q.U.I.L.L</h1>
+      <p class="tagline">Your quiet page that listens back</p>
+      <div class="signature" id="lockSig">
+        <span class="sig-dot"></span>
+        <span class="sig-line"></span>
+        <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
+        <span class="sig-dot"></span>
+      </div>
+      <p class="sub" id="lockSub">Dear diary, only you may enter.</p>
+      <div class="dots" id="pinDots"></div>
+      <div class="passcodeMsg" id="pinError"></div>
+      <div class="keypad" id="keypad">
+        <button class="key" data-key="1">1</button>
+        <button class="key" data-key="2">2</button>
+        <button class="key" data-key="3">3</button>
+        <button class="key" data-key="4">4</button>
+        <button class="key" data-key="5">5</button>
+        <button class="key" data-key="6">6</button>
+        <button class="key" data-key="7">7</button>
+        <button class="key" data-key="8">8</button>
+        <button class="key" data-key="9">9</button>
+        <button class="key func" data-key="forgot">Forgot?</button>
+        <button class="key" data-key="0">0</button>
+        <button class="key func" data-key="back">Del</button>
+      </div>
+      <button class="unlockBtn" id="unlockBtn">Unlock</button>
+    </div>
+
+    <!-- ===================== MAIN MENU ===================== -->
+    <div class="screen" id="menuScreen">
+      <div class="menuHeader">
+        <div class="signature small">
+          <span class="sig-dot"></span>
+          <span class="sig-line"></span>
+          <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
+          <span class="sig-dot"></span>
+        </div>
+        <h1 class="display" style="font-size:30px; margin-top:10px;">Welcome back</h1>
+        <p class="sub">However you're feeling today, this page is ready for it.</p>
+      </div>
+
+      <button class="card" data-screen="journalScreen">
+        <div class="label">Write to Quill</div>
+        <div class="desc">Put it into words, at your own pace</div>
+      </button>
+      <button class="card" data-screen="voiceScreen">
+        <div class="label">Speak to Quill</div>
+        <div class="desc">Say it out loud instead</div>
+      </button>
+      <button class="card" data-screen="lightScreen">
+        <div class="label">A lighter page</div>
+        <div class="desc">An easy way to ease in</div>
+      </button>
+
+      <p class="disclaimer">Quill listens, but isn't a therapist and isn't a substitute for the people in your life. It's here alongside them, not instead of them.</p>
+    </div>
+
+    <!-- ===================== JOURNAL SCREEN ===================== -->
+    <div class="screen" id="journalScreen">
+      <div class="chatHeader">
+        <button class="backBtn" data-screen="menuScreen">Back</button>
+        <div class="signature small">
+          <span class="sig-dot"></span><span class="sig-line"></span>
+          <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
+          <span class="sig-dot"></span>
+        </div>
+        <div class="chatTitle">Journal</div>
+      </div>
+      <div class="chatLog" id="journalLog"></div>
+      <div class="inputRow">
+        <textarea id="journalInput" rows="1" placeholder="What's on your mind..."></textarea>
+        <button id="journalSend">Send</button>
+      </div>
+    </div>
+
+    <!-- ===================== VOICE SCREEN ===================== -->
+    <div class="screen" id="voiceScreen">
+      <div class="chatHeader">
+        <button class="backBtn" data-screen="menuScreen">Back</button>
+        <div class="signature small" id="voiceSig">
+          <span class="sig-dot"></span><span class="sig-line"></span>
+          <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
+          <span class="sig-dot"></span>
+        </div>
+        <div class="chatTitle">Talk</div>
+      </div>
+      <div class="chatLog" id="voiceLog"></div>
+      <div class="micRow">
+        <button class="micBtn" id="voiceOrb" aria-label="Hold to talk to Quill"></button>
+      </div>
+    </div>
+
+    <!-- ===================== LIGHT CHAT SCREEN ===================== -->
+    <div class="screen" id="lightScreen">
+      <div class="chatHeader">
+        <button class="backBtn" data-screen="menuScreen">Back</button>
+        <div class="signature small">
+          <span class="sig-dot"></span><span class="sig-line"></span>
+          <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
+          <span class="sig-dot"></span>
+        </div>
+        <div class="chatTitle">Light chat</div>
+      </div>
+      <div class="chatLog" id="lightLog"></div>
+      <div class="inputRow">
+        <textarea id="lightInput" rows="1" placeholder="Say hi..."></textarea>
+        <button id="lightSend">Send</button>
+      </div>
+    </div>
+
+    <!-- ===================== SUPPORT MODAL ===================== -->
+    <div class="modalOverlay" id="supportModal">
+      <div class="modalBox">
+        <h3>If things feel like too much right now</h3>
+        <p>Quill can listen, but it can't keep you safe in a crisis. If you're thinking about harming yourself or are in immediate danger, please reach out right now:</p>
+        <p>US &amp; Canada: call or text <strong>988</strong><br>UK &amp; ROI: <strong>116 123</strong> (Samaritans)<br>Elsewhere: search "crisis line" + your country, or contact local emergency services.</p>
+        <p>If there's a person you trust - family, a neighbor, a doctor - reaching out to them matters too, even if it feels hard.</p>
+        <button class="modalClose" id="modalCloseBtn">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
