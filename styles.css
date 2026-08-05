@@ -130,7 +130,7 @@ body{
 .dot.filled{ background:var(--wine); }
 .passcodeMsg{ text-align:center; min-height:18px; color:var(--alert); font-size:13px; margin-bottom:4px; font-style:italic; }
 
-.keypad{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:auto; }
+.keypad{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:auto; width:100%;}
 .key{
   background:var(--paper-shadow); color:var(--ink); border:1px solid rgba(59,42,29,0.15);
   border-radius:10px; padding:14px 0; font-size:19px; font-family:'EB Garamond', serif;
