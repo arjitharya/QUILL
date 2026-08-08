@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Q.U.I.L.L</title>
+<script>
+  if (localStorage.getItem("quill_theme") === "night") {
+    document.documentElement.setAttribute("data-theme", "night");
+  }
+  var quillFontSize = localStorage.getItem("quill_font_size");
+  if (quillFontSize === "small" || quillFontSize === "large") {
+    document.documentElement.setAttribute("data-font-size", quillFontSize);
+  }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
@@ -22,8 +31,37 @@
       Lock QUILL
     </button>
 
+    <!-- ===================== ONBOARDING SCREEN ===================== -->
+    <div class="screen" id="onboardingScreen">
+      <div class="clasp"></div>
+      <h1 class="display brand">Q.U.I.L.L</h1>
+      <p class="tagline">Your quiet page that listens back</p>
+      <p class="sub">Two ways in, depending on what you need:</p>
+      <div class="onboardingItem">
+        <div class="onboardingLabel">Journal</div>
+        <div class="onboardingDesc">Just for you - stays on this device, always. Nothing is ever sent anywhere.</div>
+      </div>
+      <div class="onboardingItem">
+        <div class="onboardingLabel">Talk to Quill</div>
+        <div class="onboardingDesc">Text or speak, and Quill responds back - what you send goes to Groq's AI to make that possible.</div>
+      </div>
+      <button class="unlockBtn" id="onboardingStartBtn" type="button">Get started</button>
+    </div>
+
     <!-- ===================== LOCK SCREEN ===================== -->
-    <div class="screen active" id="lockScreen">
+    <div class="screen" id="lockScreen">
+      <button class="lockThemeBtn" id="lockThemeBtn" type="button" title="Switch appearance" aria-label="Switch appearance">
+        <svg class="lockThemeIcon iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <line x1="12" y1="1.5" x2="12" y2="4"></line>
+          <line x1="12" y1="20" x2="12" y2="22.5"></line>
+          <line x1="1.5" y1="12" x2="4" y2="12"></line>
+          <line x1="20" y1="12" x2="22.5" y2="12"></line>
+        </svg>
+        <svg class="lockThemeIcon iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.24 12.24a8 8 0 1 1-8.49-8.49 6.5 6.5 0 0 0 8.49 8.49z"></path>
+        </svg>
+      </button>
       <div class="clasp"></div>
       <h1 class="display brand">Q.U.I.L.L</h1>
       <p></p>
@@ -36,6 +74,13 @@
       </div>
       <p class="sub" id="lockSub">Dear diary, only you may enter.</p>
       <div class="dots" id="pinDots"></div>
+      <div class="lockoutRing" id="lockoutRing" hidden>
+        <svg viewBox="0 0 44 44">
+          <circle class="lockoutRingBg" cx="22" cy="22" r="19"></circle>
+          <circle class="lockoutRingFg" id="lockoutRingFg" cx="22" cy="22" r="19"></circle>
+        </svg>
+        <span class="lockoutRingText" id="lockoutRingText"></span>
+      </div>
       <div class="passcodeMsg" id="pinError"></div>
       <div class="keypad" id="keypad">
         <button class="key" data-key="1">1</button>
@@ -47,11 +92,26 @@
         <button class="key" data-key="7">7</button>
         <button class="key" data-key="8">8</button>
         <button class="key" data-key="9">9</button>
-        <button class="key func" data-key="forgot">Forgot?</button>
+        <button class="key func" data-key="forgot" id="forgotKey">Forgot?</button>
         <button class="key" data-key="0">0</button>
         <button class="key func" data-key="back">Delete</button>
       </div>
       <button class="unlockBtn" id="unlockBtn">Unlock</button>
+      <button class="cancelChangeBtn" id="cancelChangeBtn" type="button" hidden>Cancel</button>
+
+      <div class="confirmOverlay" id="forgotConfirmOverlay">
+        <div class="confirmBox">
+          <p class="confirmText">Resetting your passcode also erases everything Quill remembers, since there's no other way to recover access on this device. Are you sure you want to start over?</p>
+          <button class="confirmExportBtn" id="forgotExportBtn" type="button">Export first</button>
+          <div class="confirmActions">
+            <button class="confirmCancelBtn" id="forgotCancelBtn" type="button">Cancel</button>
+            <button class="confirmDangerBtn holdToConfirmBtn" id="forgotConfirmBtn" type="button">
+              <span class="holdFill"></span>
+              <span class="holdLabel">Hold to start over</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===================== MAIN MENU ===================== -->
@@ -67,73 +127,197 @@
         <p class="sub">However you're feeling today, this page is ready for it.</p>
       </div>
 
-      <button class="card" data-screen="journalScreen">
-        <div class="label">Write to Quill</div>
-        <div class="desc">Put it into words, at your own pace</div>
+      <div class="weekStrip" id="weekStrip"></div>
+      <p class="weekStripHint">Tap to see the full calendar</p>
+
+      <button class="card local" data-screen="privateJournalScreen">
+        <div class="label">Journal <span class="badge">on device</span></div>
+        <div class="desc">Just for you - stays on this device</div>
       </button>
-      <button class="card" data-screen="voiceScreen">
-        <div class="label">Speak to Quill</div>
-        <div class="desc">Say it out loud instead</div>
+      <button class="card network" data-screen="talkScreen">
+        <div class="label">Talk to Quill <span class="badge">AI-backed</span></div>
+        <div class="desc">Reflect, chat lightly, or wind down - Quill responds back</div>
       </button>
-      <button class="card" data-screen="lightScreen">
-        <div class="label">A lighter page</div>
-        <div class="desc">An easy way to ease in</div>
-      </button>
+      <div class="menuDivider"></div>
+      <div class="utilityRow">
+        <button class="utilityCard" data-screen="entriesScreen">
+          <div class="utilityLabel">Your entries</div>
+        </button>
+        <button class="utilityCard" data-screen="settingsScreen">
+          <div class="utilityLabel">Settings</div>
+        </button>
+      </div>
 
       <p class="disclaimer">Quill listens, but isn't a therapist and isn't a substitute for the people in your life. It's here alongside them, not instead of them.</p>
     </div>
 
-    <!-- ===================== JOURNAL SCREEN ===================== -->
-    <div class="screen" id="journalScreen">
+    <!-- ===================== PRIVATE JOURNAL SCREEN ===================== -->
+    <div class="screen" id="privateJournalScreen">
       <div class="chatHeader">
         <button class="backBtn" data-screen="menuScreen">Back</button>
-        <div class="signature small">
-          <span class="sig-dot"></span><span class="sig-mouth"></span>
-          <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
-          <span class="sig-dot"></span>
-        </div>
         <div class="chatTitle">Journal</div>
       </div>
-      <div class="chatLog" id="journalLog"></div>
+      <div class="privateJournalLog" id="privateJournalLog"></div>
+      <button class="promptBtn" id="journalPromptBtn" type="button">Need a prompt?</button>
       <div class="inputRow">
-        <textarea id="journalInput" rows="1" placeholder="What's on your mind..."></textarea>
-        <button id="journalSend">Send</button>
+        <textarea id="privateJournalInput" rows="1" placeholder="Write freely - just for you..."></textarea>
+        <button id="privateJournalSave" type="button">Save</button>
       </div>
     </div>
 
-    <!-- ===================== VOICE SCREEN ===================== -->
-    <div class="screen" id="voiceScreen">
+    <!-- ===================== TALK TO QUILL SCREEN (merged Reflect / Light / Wind down) ===================== -->
+    <div class="screen" id="talkScreen">
       <div class="chatHeader">
         <button class="backBtn" data-screen="menuScreen">Back</button>
-        <div class="signature small" id="voiceSig">
+        <div class="signature small" id="talkSig">
           <span class="sig-dot"></span><span class="sig-mouth"></span>
           <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
           <span class="sig-dot"></span>
         </div>
-        <div class="chatTitle">Talk</div>
+        <div class="chatTitle" id="talkChatTitle">Talk to Quill</div>
       </div>
-      <div class="chatLog" id="voiceLog"></div>
-      <div class="micRow">
-        <button class="micBtn" id="voiceOrb" aria-label="Hold to talk to Quill"></button>
+      <div class="segToggle" id="talkModeToggle">
+        <button class="segOption active" type="button" data-mode="reflect">Reflect</button>
+        <button class="segOption" type="button" data-mode="light">Light</button>
+        <button class="segOption" type="button" data-mode="winddown">Wind down</button>
+      </div>
+      <div class="talkHint" id="talkHint" hidden>
+        <span>Hold the mic to talk, or type and hit send.</span>
+        <button id="talkHintDismiss" type="button" aria-label="Dismiss">&times;</button>
+      </div>
+      <div class="chatLog" id="talkLog"></div>
+      <button class="promptBtn" id="talkPromptBtn" type="button">Need a prompt?</button>
+      <div class="inputRow">
+        <textarea id="talkInput" rows="1" placeholder="Type, or hold the mic to talk..."></textarea>
+        <button class="micSendBtn" id="talkMicSend" type="button" aria-label="Hold to talk, or type and send">
+          <svg class="micIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="11" rx="3"></rect>
+            <path d="M5 10a7 7 0 0 0 14 0"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+          </svg>
+          <svg class="sendIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
       </div>
     </div>
 
-    <!-- ===================== LIGHT CHAT SCREEN ===================== -->
-    <div class="screen" id="lightScreen">
+    <!-- ===================== ENTRIES SCREEN ===================== -->
+    <div class="screen" id="entriesScreen">
       <div class="chatHeader">
         <button class="backBtn" data-screen="menuScreen">Back</button>
-        <div class="signature small">
-          <span class="sig-dot"></span><span class="sig-mouth"></span>
-          <span class="sig-wave"><span></span><span></span><span></span><span></span><span></span></span>
-          <span class="sig-dot"></span>
+        <div class="chatTitle">Entries</div>
+      </div>
+      <p class="weeklyTrend" id="weeklyTrend" hidden></p>
+      <input type="text" class="entrySearch" id="entrySearch" placeholder="Search your Talk to Quill history...">
+      <p class="entrySearchScope">Journal entries are private and not included here.</p>
+      <div class="entryToolbar">
+        <button class="entryFavFilterBtn" id="favFilterBtn" type="button" aria-label="Show favorites only"></button>
+      </div>
+      <div class="moodStrip" id="moodStrip"></div>
+      <p class="moodTip" id="moodTip" hidden>Tap the face on any entry to log how that day felt.</p>
+      <div class="entryList" id="entryList"></div>
+    </div>
+
+    <!-- ===================== CALENDAR SCREEN ===================== -->
+    <div class="screen" id="calendarScreen">
+      <div class="chatHeader">
+        <button class="backBtn" data-screen="menuScreen">Back</button>
+        <div class="chatTitle">Calendar</div>
+      </div>
+      <div class="calendarNav">
+        <button id="calPrevBtn" type="button" aria-label="Previous month">&lsaquo;</button>
+        <div class="calendarMonthLabel" id="calMonthLabel"></div>
+        <button id="calNextBtn" type="button" aria-label="Next month">&rsaquo;</button>
+      </div>
+      <div class="calendarLegend" id="calendarLegend"></div>
+      <div class="calendarGrid" id="calendarGrid"></div>
+    </div>
+
+    <!-- ===================== SETTINGS SCREEN ===================== -->
+    <div class="screen" id="settingsScreen">
+      <div class="chatHeader">
+        <button class="backBtn" data-screen="menuScreen">Back</button>
+        <div class="chatTitle">Settings</div>
+      </div>
+
+      <div class="settingsBody">
+        <div class="settingsSection">
+          <div class="settingsLabel">Appearance</div>
+          <div class="segToggle" id="themeToggle">
+            <button class="segOption" type="button" data-theme-choice="day">Day</button>
+            <button class="segOption" type="button" data-theme-choice="night">Night</button>
+          </div>
         </div>
-        <div class="chatTitle">Light chat</div>
+
+        <div class="settingsSection">
+          <div class="settingsLabel">Text size</div>
+          <div class="segToggle" id="fontSizeToggle">
+            <button class="segOption" type="button" data-font-choice="small">Small</button>
+            <button class="segOption" type="button" data-font-choice="default">Default</button>
+            <button class="segOption" type="button" data-font-choice="large">Large</button>
+          </div>
+        </div>
+
+        <div class="settingsSection">
+          <div class="settingsLabel">Security</div>
+          <div class="settingsStatus" id="passcodeStatus"></div>
+          <button class="settingsBtn" type="button" id="changePasscodeBtn">Change passcode</button>
+        </div>
+
+        <div class="settingsSection">
+          <div class="settingsLabel">Your data</div>
+          <div class="settingsStatus" id="dataStatus"></div>
+          <button class="settingsBtn" type="button" id="exportBtn">Download my entries</button>
+          <button class="settingsBtn" type="button" id="backupBtn">Back up everything</button>
+          <button class="settingsBtn" type="button" id="restoreBtn">Restore from backup</button>
+          <input type="file" id="restoreFileInput" accept="application/json" hidden>
+        </div>
+
+        <div class="settingsSection">
+          <div class="settingsLabel">Quill's voice</div>
+          <select class="voiceSelect" id="voiceSelect"></select>
+          <div class="rateRow">
+            <input type="range" class="rateSlider" id="rateSlider" min="0.6" max="1.4" step="0.02">
+            <span class="rateValue" id="rateValue"></span>
+          </div>
+          <button class="settingsBtn" type="button" id="voicePreviewBtn">Preview voice</button>
+        </div>
       </div>
-      <div class="chatLog" id="lightLog"></div>
-      <div class="inputRow">
-        <textarea id="lightInput" rows="1" placeholder="Say hi..."></textarea>
-        <button id="lightSend">Send</button>
+
+      <div class="confirmOverlay" id="restoreConfirmOverlay">
+        <div class="confirmBox">
+          <p class="confirmText">Restoring replaces everything currently on this device - your Talk to Quill history, Journal, moods, and favorites - with what's in this backup file. This can't be undone. Continue?</p>
+          <div class="confirmActions">
+            <button class="confirmCancelBtn" id="restoreCancelBtn" type="button">Cancel</button>
+            <button class="confirmDangerBtn" id="restoreConfirmBtn" type="button">Restore</button>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <div class="tabBar" id="tabBar" hidden>
+      <button class="tabBtn" type="button" data-screen="privateJournalScreen" aria-label="Journal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4z"></path><path d="M4 4v13a3 3 0 0 0 3 3"></path></svg>
+        <span>Journal</span>
+      </button>
+      <button class="tabBtn" type="button" data-screen="talkScreen" aria-label="Talk">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9 10h.01M15 10h.01" stroke-width="2.4"></path><path d="M8.5 14.5c1 1 5 1 7 0"></path></svg>
+        <span>Talk</span>
+      </button>
+      <button class="tabBtn" type="button" data-screen="entriesScreen" aria-label="Entries">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><line x1="4" y1="9" x2="20" y2="9"></line></svg>
+        <span>Entries</span>
+      </button>
+      <button class="tabBtn" type="button" data-screen="calendarScreen" aria-label="Calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"></rect><line x1="4" y1="10" x2="20" y2="10"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="16" y1="3" x2="16" y2="7"></line></svg>
+        <span>Calendar</span>
+      </button>
+      <button class="tabBtn" type="button" data-screen="settingsScreen" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 13a7.9 7.9 0 0 0 0-2l2-1.4-2-3.5-2.3.7a8 8 0 0 0-1.7-1L15 3h-6l-.4 2.8a8 8 0 0 0-1.7 1l-2.3-.7-2 3.5L4.6 11a7.9 7.9 0 0 0 0 2l-2 1.4 2 3.5 2.3-.7a8 8 0 0 0 1.7 1L9 21h6l.4-2.8a8 8 0 0 0 1.7-1l2.3.7 2-3.5z"></path></svg>
+        <span>Settings</span>
+      </button>
     </div>
 
   </div>
