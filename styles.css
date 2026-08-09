@@ -104,8 +104,11 @@ body{
 }
 @media (min-width: 700px) and (min-height: 700px){
   .deviceFrame{
-    width:440px;
-    height:820px;
+    /* Scale with viewport height (not width) so wide monitors don't stretch
+       the card sideways - it should grow like a taller page, never a wider
+       one, and stay comfortably short of the screen rather than fill it. */
+    width:clamp(440px, 45vh, 560px);
+    height:clamp(820px, 92vh, 1040px);
     border-radius:26px;
     box-shadow:0 30px 80px rgba(0,0,0,0.55);
   }
