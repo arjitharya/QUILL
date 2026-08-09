@@ -164,22 +164,50 @@
       <p class="disclaimer">Quill listens, but isn't a therapist and isn't a substitute for the people in your life. It's here alongside them, not instead of them.</p>
     </div>
 
-    <!-- ===================== PRIVATE JOURNAL SCREEN ===================== -->
+    <!-- ===================== JOURNAL LIST SCREEN ===================== -->
     <div class="screen" id="privateJournalScreen">
       <div class="chatHeader">
         <button class="backBtn" data-screen="menuScreen">Back</button>
         <div class="chatTitle">Journal</div>
       </div>
-      <div class="privateJournalLog" id="privateJournalLog"></div>
+      <div class="journalList" id="journalList"></div>
+      <button class="journalFab journalNewBtn" id="journalNewBtn" type="button" aria-label="New note" title="New note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- ===================== JOURNAL EDITOR SCREEN ===================== -->
+    <div class="screen" id="journalEditorScreen">
+      <div class="chatHeader">
+        <button class="backBtn" id="journalEditorBackBtn" type="button">Back</button>
+        <div class="chatTitle">Journal</div>
+      </div>
       <div class="moodPrompt" id="journalMoodPrompt" hidden>
         <span class="moodPromptLabel">How did today feel?</span>
         <div class="moodPromptDots" id="journalMoodPromptDots"></div>
         <button type="button" class="moodPromptSkip" id="journalMoodPromptSkip">Skip</button>
       </div>
       <button class="promptBtn" id="journalPromptBtn" type="button">Need a prompt?</button>
-      <div class="inputRow">
-        <textarea id="privateJournalInput" rows="1" placeholder="Write freely - just for you..."></textarea>
-        <button id="privateJournalSave" type="button">Save</button>
+      <textarea id="journalEditorInput" class="journalEditorTextarea" placeholder="Write freely - just for you..."></textarea>
+      <button class="journalFab journalDeleteBtn" id="journalDeleteBtn" type="button" aria-label="Delete note" title="Delete note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+        </svg>
+      </button>
+
+      <div class="confirmOverlay" id="journalDeleteConfirmOverlay">
+        <div class="confirmBox">
+          <p class="confirmText">Delete this note? This can't be undone.</p>
+          <div class="confirmActions">
+            <button class="confirmCancelBtn" id="journalDeleteCancelBtn" type="button">Cancel</button>
+            <button class="confirmDangerBtn" id="journalDeleteConfirmBtn" type="button">Delete</button>
+          </div>
+        </div>
       </div>
     </div>
 

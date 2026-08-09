@@ -210,8 +210,7 @@ function openScreen(id) {
     resetTalkMode();
     talkPromptBtn.disabled = talkInput.value.trim().length > 0;
   } else if (id === "privateJournalScreen") {
-    renderPrivateJournal();
-    syncJournalPromptBtn();
+    renderJournalList();
   } else if (id === "entriesScreen") {
     document.getElementById("entrySearch").value = "";
     resetEntriesView();
@@ -235,6 +234,7 @@ document.querySelectorAll("[data-screen]").forEach(el => {
 /* ---------- Global bottom tab bar ---------- */
 const TAB_SCREEN_MAP = {
   privateJournalScreen: "privateJournalScreen",
+  journalEditorScreen: "privateJournalScreen",
   talkScreen: "talkScreen",
   entriesScreen: "entriesScreen",
   calendarScreen: "calendarScreen",
@@ -532,7 +532,7 @@ function wipeAllContent() {
   CONTENT_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
   mainHistory = [];
   lightHistory = [];
-  privateJournalEntries = [];
+  journalNotes = [];
   moods = {};
   favorites = [];
 }
@@ -837,41 +837,107 @@ async function sendToQuill(text, logId, history, storageKey, systemPrompt, speak
   await attemptReply(logId, history, storageKey, systemPrompt, speakReply);
 }
 
-/* ---------- Journal: private, local-only notes (no network calls at all) ---------- */
+/* ---------- Journal: private, local-only notes (no network calls at all) ----------
+   A shelf of separate notes, Notes-app style, rather than one append-only log -
+   any note can be reopened and edited later. Titles/previews are always derived
+   live from a note's content (first line / rest), never stored, so an edited
+   first line can't drift out of sync with a separately-saved title. */
+function deriveNoteTitle(content) {
+  const firstLine = (content || "").split("\n")[0].trim();
+  return firstLine ? truncate(firstLine, 60) : "Untitled note";
+}
+function deriveNotePreview(content) {
+  const rest = (content || "").split("\n").slice(1).join(" ").trim();
+  return rest ? truncate(rest, 70) : "";
+}
+
+function generateNoteId() {
+  return "n_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+// Old data was one flat, ever-growing array of {content, ts}. Migrates each
+// old entry into its own independently-editable note. Guarded by "already has
+// an id", so this is idempotent and safe to run on every load.
+function migratePrivateJournal(raw) {
+  let changed = false;
+  const migrated = raw.map(item => {
+    if (item && typeof item.id === "string") return item;
+    changed = true;
+    const ts = (item && item.ts) || Date.now();
+    return { id: generateNoteId(), content: (item && item.content) || "", createdAt: ts, updatedAt: ts };
+  });
+  return { migrated, changed };
+}
+
 function loadPrivateJournal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.privateJournal);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    const { migrated, changed } = migratePrivateJournal(parsed);
+    if (changed) localStorage.setItem(STORAGE_KEYS.privateJournal, JSON.stringify(migrated));
+    return migrated;
   } catch (e) {
     return [];
   }
 }
-function savePrivateJournal() {
-  localStorage.setItem(STORAGE_KEYS.privateJournal, JSON.stringify(privateJournalEntries));
+function saveJournalNotes() {
+  localStorage.setItem(STORAGE_KEYS.privateJournal, JSON.stringify(journalNotes));
 }
-let privateJournalEntries = loadPrivateJournal();
+let journalNotes = loadPrivateJournal();
 
-function renderPrivateJournal() {
-  const logEl = document.getElementById("privateJournalLog");
-  logEl.innerHTML = "";
-  if (!privateJournalEntries.length) {
+function getJournalNote(id) {
+  return journalNotes.find(n => n.id === id) || null;
+}
+function createJournalNote() {
+  const note = { id: generateNoteId(), content: "", createdAt: Date.now(), updatedAt: Date.now() };
+  journalNotes.push(note); // in-memory only until the first non-empty autosave
+  return note;
+}
+function deleteJournalNote(id) {
+  const idx = journalNotes.findIndex(n => n.id === id);
+  if (idx !== -1) journalNotes.splice(idx, 1);
+  saveJournalNotes();
+}
+
+function renderJournalList() {
+  const listEl = document.getElementById("journalList");
+  listEl.innerHTML = "";
+  if (!journalNotes.length) {
     const empty = document.createElement("p");
     empty.className = "emptyState";
-    empty.textContent = "Nothing written yet - this page is just for you.";
-    logEl.appendChild(empty);
+    empty.textContent = "Nothing written yet - tap + to start your first note.";
+    listEl.appendChild(empty);
     return;
   }
-  privateJournalEntries.forEach(entry => {
-    const div = document.createElement("div");
-    div.className = "privateEntry";
-    const timeEl = document.createElement("span");
-    timeEl.className = "privateEntryTime";
-    timeEl.textContent = formatDayLabel(entry.ts);
-    div.appendChild(timeEl);
-    div.appendChild(document.createTextNode(entry.content));
-    logEl.appendChild(div);
-  });
-  logEl.scrollTop = logEl.scrollHeight;
+  journalNotes.slice().sort((a, b) => b.updatedAt - a.updatedAt)
+    .forEach(note => listEl.appendChild(buildJournalCard(note)));
+}
+
+function buildJournalCard(note) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "card journalCard local";
+
+  const dateEl = document.createElement("div");
+  dateEl.className = "journalCardDate";
+  dateEl.textContent = formatDayLabel(note.updatedAt);
+  card.appendChild(dateEl);
+
+  const titleEl = document.createElement("div");
+  titleEl.className = "journalCardTitle";
+  titleEl.textContent = deriveNoteTitle(note.content);
+  card.appendChild(titleEl);
+
+  const preview = deriveNotePreview(note.content);
+  if (preview) {
+    const previewEl = document.createElement("div");
+    previewEl.className = "journalCardPreview";
+    previewEl.textContent = preview;
+    card.appendChild(previewEl);
+  }
+
+  card.addEventListener("click", () => openJournalNote(note.id));
+  return card;
 }
 
 // Grows a compose textarea to fit its content (WhatsApp-style), up to the
@@ -881,30 +947,101 @@ function autoGrowTextarea(el) {
   el.style.height = el.scrollHeight + "px";
 }
 
-const privateJournalInput = document.getElementById("privateJournalInput");
-const privateJournalSaveBtn = document.getElementById("privateJournalSave");
+const journalEditorInput = document.getElementById("journalEditorInput");
+let currentJournalNoteId = null;
+let currentJournalNoteIsNew = false; // true until the note's first non-empty autosave
 
-function handlePrivateJournalSave() {
-  const text = privateJournalInput.value.trim();
-  if (!text) return;
-  privateJournalEntries.push({ content: text, ts: Date.now() });
-  savePrivateJournal();
-  privateJournalInput.value = "";
-  autoGrowTextarea(privateJournalInput);
-  renderPrivateJournal();
-  maybeShowJournalMoodPrompt();
+function openJournalNote(id) {
+  currentJournalNoteId = id;
+  currentJournalNoteIsNew = false;
+  const note = getJournalNote(id);
+  journalEditorInput.value = note ? note.content : "";
+  syncJournalEditorPromptBtn();
+  if (note) maybeShowJournalMoodPrompt(note);
+  openScreen("journalEditorScreen");
 }
+
+function openNewJournalNote() {
+  const note = createJournalNote();
+  currentJournalNoteId = note.id;
+  currentJournalNoteIsNew = true;
+  journalEditorInput.value = "";
+  syncJournalEditorPromptBtn();
+  maybeShowJournalMoodPrompt(note);
+  openScreen("journalEditorScreen");
+  journalEditorInput.focus();
+}
+
+let journalAutosaveTimer = null;
+const JOURNAL_AUTOSAVE_DEBOUNCE_MS = 400;
+
+function flushJournalEditorSave() {
+  clearTimeout(journalAutosaveTimer);
+  if (currentJournalNoteId == null) return;
+  const text = journalEditorInput.value;
+  const note = getJournalNote(currentJournalNoteId);
+  if (!note) return;
+
+  if (!text.trim() && currentJournalNoteIsNew) {
+    // A brand-new note left blank is discarded rather than saved empty.
+    const idx = journalNotes.findIndex(n => n.id === currentJournalNoteId);
+    if (idx !== -1) journalNotes.splice(idx, 1);
+    return;
+  }
+
+  note.content = text;
+  note.updatedAt = Date.now();
+  const wasNew = currentJournalNoteIsNew;
+  currentJournalNoteIsNew = false;
+  saveJournalNotes();
+  if (wasNew || text.trim()) maybeShowJournalMoodPrompt(note);
+}
+
+journalEditorInput.addEventListener("input", () => {
+  syncJournalEditorPromptBtn();
+  clearTimeout(journalAutosaveTimer);
+  journalAutosaveTimer = setTimeout(flushJournalEditorSave, JOURNAL_AUTOSAVE_DEBOUNCE_MS);
+});
+
+document.getElementById("journalEditorBackBtn").addEventListener("click", () => {
+  flushJournalEditorSave();
+  currentJournalNoteId = null;
+  openScreen("privateJournalScreen");
+});
+
+document.getElementById("journalNewBtn").addEventListener("click", openNewJournalNote);
+
+/* ---------- Journal: delete a note ---------- */
+document.getElementById("journalDeleteBtn").addEventListener("click", () => {
+  document.getElementById("journalDeleteConfirmOverlay").classList.add("open");
+});
+document.getElementById("journalDeleteCancelBtn").addEventListener("click", () => {
+  document.getElementById("journalDeleteConfirmOverlay").classList.remove("open");
+});
+document.getElementById("journalDeleteConfirmOverlay").addEventListener("click", e => {
+  if (e.target.id === "journalDeleteConfirmOverlay") e.target.classList.remove("open");
+});
+document.getElementById("journalDeleteConfirmBtn").addEventListener("click", () => {
+  clearTimeout(journalAutosaveTimer);
+  document.getElementById("journalDeleteConfirmOverlay").classList.remove("open");
+  if (currentJournalNoteId != null) deleteJournalNote(currentJournalNoteId);
+  currentJournalNoteId = null;
+  openScreen("privateJournalScreen");
+});
 
 // Prompts for today's mood right after a save, since that's when a person is
 // already thinking about how the day went - skipped if today's mood is
 // already set, or once dismissed, so it never nags more than once a day.
+// Only fires for notes created today - editing an older note shouldn't ask
+// about today's mood.
 let journalMoodPromptDismissed = false;
 const journalMoodPromptEl = document.getElementById("journalMoodPrompt");
 const journalMoodPromptDotsEl = document.getElementById("journalMoodPromptDots");
 
-function maybeShowJournalMoodPrompt() {
+function maybeShowJournalMoodPrompt(note) {
   const todayKey = dayKeyOf(Date.now());
-  if (moods[todayKey] || journalMoodPromptDismissed) return;
+  if (dayKeyOf(note.createdAt) !== todayKey) { journalMoodPromptEl.hidden = true; return; }
+  if (moods[todayKey] || journalMoodPromptDismissed) { journalMoodPromptEl.hidden = true; return; }
   journalMoodPromptDotsEl.innerHTML = "";
   MOOD_LEVELS.forEach(level => {
     const dot = document.createElement("button");
@@ -927,24 +1064,18 @@ document.getElementById("journalMoodPromptSkip").addEventListener("click", () =>
   journalMoodPromptDismissed = true;
   journalMoodPromptEl.hidden = true;
 });
-privateJournalSaveBtn.addEventListener("click", handlePrivateJournalSave);
-privateJournalInput.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePrivateJournalSave(); }
-});
 
 const journalPromptBtn = document.getElementById("journalPromptBtn");
-function syncJournalPromptBtn() {
-  journalPromptBtn.disabled = privateJournalInput.value.trim().length > 0;
+function syncJournalEditorPromptBtn() {
+  journalPromptBtn.disabled = journalEditorInput.value.trim().length > 0;
 }
-privateJournalInput.addEventListener("input", () => {
-  syncJournalPromptBtn();
-  autoGrowTextarea(privateJournalInput);
-});
 journalPromptBtn.addEventListener("click", () => {
-  if (privateJournalInput.value.trim()) return;
-  privateJournalInput.value = getRandomPrompt();
-  syncJournalPromptBtn();
-  autoGrowTextarea(privateJournalInput);
+  if (journalEditorInput.value.trim()) return;
+  journalEditorInput.value = getRandomPrompt();
+  syncJournalEditorPromptBtn();
+  journalEditorInput.focus();
+  clearTimeout(journalAutosaveTimer);
+  journalAutosaveTimer = setTimeout(flushJournalEditorSave, JOURNAL_AUTOSAVE_DEBOUNCE_MS);
 });
 
 /* ---------- Talk to Quill's Reflect/Light/Wind down mode state ----------
@@ -1394,11 +1525,11 @@ document.getElementById("exportBtn").addEventListener("click", exportEntries);
    This is a structured, restorable snapshot of everything QUILL has stored. */
 function buildBackupData() {
   return {
-    version: 1,
+    version: 2, // v2: privateJournal is now an array of {id, content, createdAt, updatedAt} notes
     exportedAt: Date.now(),
     talk: mainHistory,
     light: lightHistory,
-    privateJournal: privateJournalEntries,
+    privateJournal: journalNotes,
     moods: moods,
     favorites: favorites
   };
@@ -1456,6 +1587,8 @@ document.getElementById("restoreConfirmBtn").addEventListener("click", e => {
   const data = pendingRestoreData;
   localStorage.setItem(STORAGE_KEYS.talk, JSON.stringify(data.talk || []));
   localStorage.setItem(STORAGE_KEYS.light, JSON.stringify(data.light || []));
+  // Works for both old (flat {content, ts}) and new (note-object) backups -
+  // loadPrivateJournal() migrates old-shape data transparently on reload.
   localStorage.setItem(STORAGE_KEYS.privateJournal, JSON.stringify(data.privateJournal || []));
   localStorage.setItem(STORAGE_KEYS.moods, JSON.stringify(data.moods || {}));
   localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify(data.favorites || []));

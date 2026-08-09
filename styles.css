@@ -136,7 +136,14 @@ body{
 }
 
 /* ---------- Screens ---------- */
-.screen{ display:none; flex-direction:column; flex:1; min-height:0; animation:fadeIn 0.35s ease; }
+/* position:relative makes .screen itself the containing block for any
+   absolutely-positioned child (the journal FAB, lockThemeBtn, confirm
+   overlays) - without it, .screen only *accidentally* acts as one while its
+   fadeIn animation is mid-flight (a non-"none" transform value creates a
+   containing block), then silently hands off to .page once the animation
+   settles, at a different, larger box - causing children positioned via
+   `bottom` to jump down after their entrance animation finishes. */
+.screen{ display:none; flex-direction:column; flex:1; min-height:0; position:relative; animation:fadeIn 0.35s ease; }
 .screen.active{ display:flex; }
 @keyframes fadeIn{
   from{ opacity:0; transform:translateY(6px); }
@@ -327,7 +334,7 @@ body{
 }
 
 .chatLog{
-  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
+  flex:1; min-height:140px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
   display:flex; flex-direction:column; gap:10px;
   padding:6px 2px 12px;
 }
@@ -357,21 +364,44 @@ body{
   border-radius:8px 8px 8px 0; padding:10px 14px; font-size:13.5px; line-height:1.5; color:var(--ink);
 }
 
-.privateJournalLog{
-  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
-  display:flex; flex-direction:column; gap:14px;
-  padding:6px 2px 12px;
+.journalList{
+  flex:1; min-height:140px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
+  display:flex; flex-direction:column; gap:10px;
+  padding:2px 2px 76px; /* clears the floating new-note button so the last card can scroll into view */
 }
-.privateEntry{
-  font-size:calc(15px * var(--font-scale)); line-height:1.6; color:var(--ink);
-  white-space:pre-wrap; padding-bottom:12px; border-bottom:1px solid rgba(var(--ink-rgb),0.1);
-  animation:msgIn 0.25s ease-out;
+.journalCardDate{
+  font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase;
+  color:var(--ink-dim); font-style:italic;
 }
-.privateEntry:last-child{ border-bottom:none; }
-.privateEntryTime{
-  display:block; font-size:11px; letter-spacing:0.05em; text-transform:uppercase;
-  color:var(--ink-dim); font-style:italic; margin-bottom:4px;
+.journalCardTitle{
+  font-family:'Caveat', cursive; font-size:calc(19px * var(--font-scale)); font-weight:700;
+  color:var(--ink); margin-top:1px; line-height:1.25;
 }
+.journalCardPreview{ font-size:calc(12.5px * var(--font-scale)); color:var(--ink-dim); margin-top:3px; }
+
+.journalEditorTextarea{
+  flex:1; min-height:0; resize:none; border:none; background:transparent; box-shadow:none;
+  color:var(--ink); font-family:'EB Garamond', serif;
+  font-size:calc(15.5px * var(--font-scale)); line-height:1.6;
+  padding:6px 2px 76px; max-height:none; /* bottom padding clears the floating delete button */
+  -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
+}
+.journalEditorTextarea:focus{ outline:none; }
+
+/* Floating action button, bottom-right of the page (like lockNowBtn, it's
+   positioned relative to .page and stays put while the content beneath it
+   scrolls) rather than a small header icon. */
+.journalFab{
+  position:absolute; right:16px; bottom:16px; z-index:4;
+  width:50px; height:50px; display:flex; align-items:center; justify-content:center;
+  border:none; border-radius:50%; cursor:pointer; padding:0; color:#FBF1E4;
+  box-shadow:0 6px 16px rgba(0,0,0,0.3);
+  transition:transform 0.12s ease;
+}
+.journalFab:active{ transform:scale(0.94); }
+.journalFab svg{ width:22px; height:22px; }
+.journalNewBtn{ background:var(--wine); }
+.journalDeleteBtn{ background:var(--alert); }
 
 .thinkingDots{ display:inline-flex; gap:4px; }
 .thinkingDots span{
@@ -455,7 +485,7 @@ button:disabled{ opacity:0.5; cursor:default; }
 .moodFace.small{ width:12px; height:12px; }
 .moodFace:not(.unset){ color:var(--ink); }
 .entryList{
-  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
+  flex:1; min-height:140px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
   display:flex; flex-direction:column; gap:10px;
   padding:2px 2px 12px;
 }
@@ -523,7 +553,7 @@ button:disabled{ opacity:0.5; cursor:default; }
 .calendarDayNum{ line-height:1; }
 
 /* ---------- Settings screen ---------- */
-.settingsBody{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding:2px 2px 12px; }
+.settingsBody{ flex:1; min-height:140px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding:2px 2px 12px; }
 .settingsSection{
   background:var(--paper-shadow); border:1px solid rgba(var(--ink-rgb),0.12);
   border-radius:10px; padding:16px 18px; margin-bottom:14px;
