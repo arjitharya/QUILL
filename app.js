@@ -161,6 +161,19 @@ function showStatus(elId, text, ms) {
   }, ms || 3000);
 }
 
+/* ---------- Keep the app frame sized to the space actually visible above
+   the on-screen keyboard, instead of the full layout viewport, so the
+   keyboard covers content rather than squashing/shifting it ---------- */
+function syncAppHeight() {
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty("--app-height", vh + "px");
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", syncAppHeight);
+  window.visualViewport.addEventListener("scroll", syncAppHeight);
+}
+syncAppHeight();
+
 /* ---------- Screen navigation ---------- */
 function openScreen(id) {
   const previousActive = document.querySelector(".screen.active");
