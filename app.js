@@ -920,7 +920,7 @@ journalPromptBtn.addEventListener("click", () => {
    The actual compose bar, send handler, and voice logic live further down
    in the Talk to Quill section, since they're shared across all three modes. */
 const TALK_MODE_CONFIG = {
-  reflect: { title: "Talk to Quill", placeholder: "Type, or hold the mic to talk...", history: () => mainHistory, storageKey: STORAGE_KEYS.talk, systemPrompt: SYSTEM_PROMPT, emptyText: "Nothing here yet - type, or hold the mic to talk to Quill." },
+  reflect: { title: "Talk to Quill", placeholder: "Type, or tap the mic to talk...", history: () => mainHistory, storageKey: STORAGE_KEYS.talk, systemPrompt: SYSTEM_PROMPT, emptyText: "Nothing here yet - type, or tap the mic to talk to Quill." },
   light: { title: "A lighter page", placeholder: "Say hi...", history: () => lightHistory, storageKey: STORAGE_KEYS.light, systemPrompt: LIGHT_SYSTEM_PROMPT, emptyText: "Nothing here yet - say hi and see where it goes." },
   winddown: { title: "Wind down", placeholder: "Ease into the end of the day...", history: () => lightHistory, storageKey: STORAGE_KEYS.light, systemPrompt: WIND_DOWN_SYSTEM_PROMPT, emptyText: "Nothing here yet - ease into it whenever you're ready." }
 };
@@ -1431,7 +1431,7 @@ document.getElementById("restoreConfirmBtn").addEventListener("click", e => {
   location.reload();
 });
 
-/* ---------- Talk to Quill: text + hold-to-talk in one compose bar,
+/* ---------- Talk to Quill: text + tap-to-talk in one compose bar,
    shared across the Reflect / Light / Wind down modes ---------- */
 const talkInput = document.getElementById("talkInput");
 const talkMicSendBtn = document.getElementById("talkMicSend");
@@ -1559,8 +1559,7 @@ function startListening() {
   talkMicSendBtn.classList.add("listening");
   setVoiceState("listening");
   recognizer.start();
-  // Safety net: pointerup/pointerleave don't always fire reliably on mobile
-  // Safari (e.g. if a finger slides off during scroll), which could otherwise
+  // Safety net in case recognition never fires onend, which could otherwise
   // leave the mic "listening" forever.
   listenSafetyTimeoutId = setTimeout(stopListening, MAX_LISTEN_MS);
 }
@@ -1570,19 +1569,15 @@ function stopListening() {
   if (activeRecognizer) activeRecognizer.stop();
 }
 
-talkMicSendBtn.addEventListener("pointerdown", () => {
+function toggleListening() {
   if (talkInput.value.trim()) return;
-  startListening();
-});
-talkMicSendBtn.addEventListener("pointerup", () => {
-  if (talkInput.value.trim()) return;
-  stopListening();
-});
-talkMicSendBtn.addEventListener("pointerleave", () => {
-  if (!talkInput.value.trim()) stopListening();
-});
-talkMicSendBtn.addEventListener("pointercancel", () => {
-  if (!talkInput.value.trim()) stopListening();
+  if (activeRecognizer) stopListening();
+  else startListening();
+}
+
+talkMicSendBtn.addEventListener("click", () => {
+  if (talkInput.value.trim()) { handleTalkSend(); return; }
+  toggleListening();
 });
 
 talkMicSendBtn.addEventListener("keydown", e => {
@@ -1590,16 +1585,7 @@ talkMicSendBtn.addEventListener("keydown", e => {
   if (talkInput.value.trim()) return;
   e.preventDefault();
   if (e.repeat) return;
-  startListening();
-});
-talkMicSendBtn.addEventListener("keyup", e => {
-  if (e.key !== "Enter" && e.key !== " ") return;
-  if (talkInput.value.trim()) return;
-  stopListening();
-});
-talkMicSendBtn.addEventListener("click", () => {
-  if (!talkInput.value.trim()) return;
-  handleTalkSend();
+  toggleListening();
 });
 
 const DEFAULT_RATE = 0.98;
