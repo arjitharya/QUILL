@@ -1,6 +1,6 @@
 {
   "name": "Q.U.I.L.L.",
-  "short_name": "Quill",
+  "short_name": "Q.U.I.L.L",
   "description": "A private, on-device journal with an AI companion that listens back.",
   "start_url": "./index.html",
   "scope": "./",
