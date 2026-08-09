@@ -174,6 +174,21 @@ if (window.visualViewport) {
 }
 syncAppHeight();
 
+/* ---------- Orientation: locked to portrait while the passcode screen is
+   up, free to rotate everywhere else in the app. Best-effort - the Screen
+   Orientation API isn't available in every browser (notably iOS Safari),
+   so this quietly does nothing there instead of erroring. ---------- */
+function lockPortraitOrientation() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock("portrait").catch(() => {});
+  }
+}
+function unlockOrientation() {
+  if (screen.orientation && screen.orientation.unlock) {
+    try { screen.orientation.unlock(); } catch (e) {}
+  }
+}
+
 /* ---------- Screen navigation ---------- */
 function openScreen(id) {
   const previousActive = document.querySelector(".screen.active");
@@ -183,6 +198,8 @@ function openScreen(id) {
   }
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  if (id === "lockScreen") lockPortraitOrientation();
+  else unlockOrientation();
   const chrome = id !== "lockScreen" && id !== "onboardingScreen";
   document.getElementById("lockNowBtn").hidden = !chrome;
   syncTabBar(id, chrome);
@@ -331,6 +348,7 @@ let pendingFirstPin = null;
 // "change-confirm" -> changing passcode: re-entering the new one to confirm
 let lockState = localStorage.getItem(STORAGE_KEYS.pinHash) ? "unlock" : "setup";
 document.getElementById(lockState === "setup" ? "onboardingScreen" : "lockScreen").classList.add("active");
+if (lockState === "unlock") lockPortraitOrientation();
 
 // A brief branded splash, like a native app cold-starting - shown for a beat
 // even though the real screen underneath is already ready, then faded out.
