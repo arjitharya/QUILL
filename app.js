@@ -17,9 +17,10 @@ const SYSTEM_PROMPT =
   "message like a crisis; most of the time people just want to talk about their day, vent a little, or think out loud. Only shift into a softer, gentler, more supportive tone when the person actually shares " +
   "something heavy (loneliness, grief, hopelessness, self-doubt, and so on) - and even then, stay natural, " +
   "never clinical or therapist-sounding. Never lecture, never give numbered advice lists. If the person " +
-  "expresses thoughts of self-harm, suicide, or being in danger, respond with direct warmth and clearly " +
-  "point them to a crisis line (988 in the US, or local emergency services) and someone they trust in real " +
-  "life - briefly, once, without repeating it. You're glad to be here, but you're alongside the people in " +
+  "expresses thoughts of self-harm, suicide, or being in danger, respond with direct warmth and stay present " +
+  "with them. The app already shows a crisis resource separately when this happens, so don't repeat a hotline " +
+  "number yourself - just gently encourage them to reach out to that resource and to someone they trust in " +
+  "real life, once, without turning it into a lecture. You're glad to be here, but you're alongside the people in " +
   "someone's life, not a replacement for them. When someone seems stuck in a spiral or a harsh thought about " +
   "themselves, gently offer another way to look at it - a genuine, caring reframe, not a clinical exercise or " +
   "numbered steps. Ask it like a friend would ('is there another way to see that?' or 'what would you tell a " +
@@ -57,7 +58,7 @@ const CRISIS_PHRASES = [
   "better off dead", "can't go on", "cant go on", "not worth living"
 ];
 const CARE_NOTE_TEXT =
-  "That sounds like a lot to carry. If you're thinking about harming yourself or feel unsafe right now, please reach out. And if there's someone in your life you trust, they'd probably want to hear from you too.";
+  "That sounds like a lot to carry. If you're thinking about harming yourself or feel unsafe right now, please reach out to a crisis line - findahelpline.com can point you to one wherever you are. And if there's someone in your life you trust, they'd probably want to hear from you too.";
 
 function detectCrisis(text) {
   const lower = text.toLowerCase();
@@ -317,6 +318,14 @@ let pendingFirstPin = null;
 // "change-confirm" -> changing passcode: re-entering the new one to confirm
 let lockState = localStorage.getItem(STORAGE_KEYS.pinHash) ? "unlock" : "setup";
 document.getElementById(lockState === "setup" ? "onboardingScreen" : "lockScreen").classList.add("active");
+
+// A brief branded splash, like a native app cold-starting - shown for a beat
+// even though the real screen underneath is already ready, then faded out.
+const splashScreenEl = document.getElementById("splashScreen");
+setTimeout(() => {
+  splashScreenEl.classList.add("splashHide");
+  setTimeout(() => splashScreenEl.remove(), 400);
+}, 700);
 
 document.getElementById("onboardingStartBtn").addEventListener("click", () => {
   openScreen("lockScreen");
@@ -709,7 +718,7 @@ function appendCareNote(logId) {
 function appendThinking(logId) {
   const logEl = document.getElementById(logId);
   const div = document.createElement("div");
-  div.className = "msg eva";
+  div.className = "msg quill";
   div.innerHTML = '<span class="thinkingDots"><span></span><span></span><span></span></span>';
   logEl.appendChild(div);
   logEl.scrollTop = logEl.scrollHeight;
@@ -727,7 +736,7 @@ function renderLog(logId, history, emptyText) {
     logEl.appendChild(empty);
     return;
   }
-  history.forEach(m => appendMessage(logId, m.role === "user" ? "user" : "eva", m.content, m.ts));
+  history.forEach(m => appendMessage(logId, m.role === "user" ? "user" : "quill", m.content, m.ts));
 }
 
 /* ---------- Sending a message (shared by Talk to Quill and Light chat) ---------- */
@@ -757,7 +766,7 @@ async function attemptReply(logId, history, storageKey, systemPrompt, speakReply
   try {
     const reply = await callGroq(systemPrompt, history);
     thinkingEl.remove();
-    appendMessage(logId, "eva", reply);
+    appendMessage(logId, "quill", reply);
     history.push({ role: "assistant", content: reply, ts: Date.now() });
     saveHistory(storageKey, history);
     if (speakReply) speakText(reply);
@@ -852,7 +861,41 @@ function handlePrivateJournalSave() {
   privateJournalInput.value = "";
   autoGrowTextarea(privateJournalInput);
   renderPrivateJournal();
+  maybeShowJournalMoodPrompt();
 }
+
+// Prompts for today's mood right after a save, since that's when a person is
+// already thinking about how the day went - skipped if today's mood is
+// already set, or once dismissed, so it never nags more than once a day.
+let journalMoodPromptDismissed = false;
+const journalMoodPromptEl = document.getElementById("journalMoodPrompt");
+const journalMoodPromptDotsEl = document.getElementById("journalMoodPromptDots");
+
+function maybeShowJournalMoodPrompt() {
+  const todayKey = dayKeyOf(Date.now());
+  if (moods[todayKey] || journalMoodPromptDismissed) return;
+  journalMoodPromptDotsEl.innerHTML = "";
+  MOOD_LEVELS.forEach(level => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.className = "moodPickerDot";
+    dot.setAttribute("aria-label", MOOD_LABELS[level]);
+    dot.title = MOOD_LABELS[level];
+    dot.appendChild(buildFaceIcon(level));
+    dot.addEventListener("click", () => {
+      moods[todayKey] = level;
+      saveMoods();
+      renderWeekStrip();
+      journalMoodPromptEl.hidden = true;
+    });
+    journalMoodPromptDotsEl.appendChild(dot);
+  });
+  journalMoodPromptEl.hidden = false;
+}
+document.getElementById("journalMoodPromptSkip").addEventListener("click", () => {
+  journalMoodPromptDismissed = true;
+  journalMoodPromptEl.hidden = true;
+});
 privateJournalSaveBtn.addEventListener("click", handlePrivateJournalSave);
 privateJournalInput.addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePrivateJournalSave(); }
@@ -1432,8 +1475,15 @@ document.getElementById("talkHintDismiss").addEventListener("click", () => {
   syncTalkHint();
 });
 
+const voiceStatusEl = document.getElementById("voiceStatus");
+const VOICE_STATUS_TEXT = { listening: "Listening...", thinking: "Thinking...", talking: "Speaking..." };
+
 function setVoiceState(state) {
   talkSigEl.className = "signature small" + (state ? " " + state : "");
+  const text = VOICE_STATUS_TEXT[state];
+  voiceStatusEl.textContent = text || "";
+  voiceStatusEl.className = "voiceStatus" + (state ? " " + state : "");
+  voiceStatusEl.hidden = !text;
 }
 
 async function handleTalkSend() {

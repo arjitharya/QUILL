@@ -3,7 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Q.U.I.L.L. is a private, on-device journal with an AI companion that listens back — your entries stay local, your conversations are yours.">
+<meta name="theme-color" content="#3E2A1F">
 <title>Q.U.I.L.L</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <script>
   if (localStorage.getItem("quill_theme") === "night") {
     document.documentElement.setAttribute("data-theme", "night");
@@ -18,6 +25,10 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+<div class="splashScreen" id="splashScreen">
+  <img class="splashIcon" src="assets/icon.svg" alt="">
+</div>
 
 <div class="deviceFrame" id="app">
   <div class="page">
@@ -158,6 +169,11 @@
         <div class="chatTitle">Journal</div>
       </div>
       <div class="privateJournalLog" id="privateJournalLog"></div>
+      <div class="moodPrompt" id="journalMoodPrompt" hidden>
+        <span class="moodPromptLabel">How did today feel?</span>
+        <div class="moodPromptDots" id="journalMoodPromptDots"></div>
+        <button type="button" class="moodPromptSkip" id="journalMoodPromptSkip">Skip</button>
+      </div>
       <button class="promptBtn" id="journalPromptBtn" type="button">Need a prompt?</button>
       <div class="inputRow">
         <textarea id="privateJournalInput" rows="1" placeholder="Write freely - just for you..."></textarea>
@@ -186,6 +202,7 @@
         <button id="talkHintDismiss" type="button" aria-label="Dismiss">&times;</button>
       </div>
       <div class="chatLog" id="talkLog"></div>
+      <p class="voiceStatus" id="voiceStatus" aria-live="polite" hidden></p>
       <button class="promptBtn" id="talkPromptBtn" type="button">Need a prompt?</button>
       <div class="inputRow">
         <textarea id="talkInput" rows="1" placeholder="Type, or hold the mic to talk..."></textarea>
@@ -232,6 +249,7 @@
         <button id="calNextBtn" type="button" aria-label="Next month">&rsaquo;</button>
       </div>
       <div class="calendarLegend" id="calendarLegend"></div>
+      <p class="moodTip">Colors come from moods you log on the Entries screen - tap the face icon on any entry to set one.</p>
       <div class="calendarGrid" id="calendarGrid"></div>
     </div>
 
@@ -269,10 +287,11 @@
         <div class="settingsSection">
           <div class="settingsLabel">Your data</div>
           <div class="settingsStatus" id="dataStatus"></div>
-          <button class="settingsBtn" type="button" id="exportBtn">Download my entries</button>
-          <button class="settingsBtn" type="button" id="backupBtn">Back up everything</button>
-          <button class="settingsBtn" type="button" id="restoreBtn">Restore from backup</button>
+          <button class="settingsBtn" type="button" id="exportBtn">Download my entries (.txt)</button>
+          <button class="settingsBtn" type="button" id="backupBtn">Back up everything (.json)</button>
+          <button class="settingsBtn" type="button" id="restoreBtn">Restore from backup (.json)</button>
           <input type="file" id="restoreFileInput" accept="application/json" hidden>
+          <p class="settingsCaption">Plain text and unencrypted JSON, not a proprietary format - readable in any text editor, but keep the file somewhere private.</p>
         </div>
 
         <div class="settingsSection">
