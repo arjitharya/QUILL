@@ -21,13 +21,13 @@ remembers, and stays. Think of Quill as a locked diary that talks back.
 - **Journal** - fully private and local. Nothing you write here is ever sent anywhere; it's the
   "just for you" side of the app, like a notes app under a lock.
 - **Talk to Quill** - AI-backed, with three tones in one screen (a segmented toggle at the top):
-  - **Reflect** - the default. Type or hold-to-talk; Quill remembers recent mood check-ins and
-    responds with that context in mind.
+  - **Reflect** - the default. Type or tap the mic to talk; Quill remembers recent mood check-ins
+    and responds with that context in mind.
   - **Light** - easy banter and small talk, kept in its own conversation thread.
   - **Wind down** - a calmer, end-of-day tone, sharing Light's thread.
   Switching tones swaps both the conversation shown and where it's saved, but the same compose bar
-  (hold-to-talk mic that turns into a send button once you start typing) works across all three.
-  A one-time dismissible hint explains the hold-to-talk gesture the first time you open it each
+  (tap-to-talk mic that turns into a send button once you start typing) works across all three.
+  A one-time dismissible hint explains the tap-to-talk gesture the first time you open it each
   session.
 - The home screen's two cards are visually distinguished by trust model - Journal carries a moss
   "on device" badge, Talk to Quill a wine "AI-backed" badge - so the privacy story from onboarding
@@ -75,11 +75,30 @@ remembers, and stays. Think of Quill as a locked diary that talks back.
   rate, and preview it.
 
 ### Voice mode
-Hold-to-talk, not click-to-toggle - the mic only listens while you're pressing it, with a 60-second
-safety cutoff in case a touch gesture doesn't release cleanly (e.g. scrolling on mobile Safari).
-Spoken replies use the selected system voice. Needs a browser with Web Speech API support (Chrome,
-Edge, or Safari); it degrades gracefully with a message on browsers that don't support it (e.g.
-Firefox).
+Tap-to-toggle, not hold-to-talk - tap the mic once to start listening, tap it again to stop, with a
+60-second safety cutoff in case the browser's recognizer never fires its own end event. Spoken
+replies use the selected system voice. Needs a browser with Web Speech API support (Chrome, Edge, or
+Safari); it degrades gracefully with a message on browsers that don't support it (e.g. Firefox).
+
+## Installing it as an app
+Quill is a PWA (Progressive Web App), so it can be added to a phone's home screen and opened like a
+regular installed app - full-screen, no browser address bar - without going through an app store.
+
+**iPhone/iPad (Safari):**
+1. Open the site in Safari (it has to be Safari - other iOS browsers can't install PWAs).
+2. Tap the Share icon (the square with an arrow pointing up).
+3. Scroll down and tap **Add to Home Screen**.
+4. The name defaults to "Q.U.I.L.L" - tap **Add**.
+
+**Android (Chrome):**
+1. Open the site in Chrome.
+2. Tap the three-dot menu in the top right.
+3. Tap **Add to Home screen** (or **Install app**, if Chrome already offered it as a banner).
+4. Confirm the name and tap **Add** / **Install**.
+
+Once installed, the icon and label on the home screen come from `manifest.json` - the `short_name`
+field, plus an `apple-mobile-web-app-title` meta tag in `index.html`, since iOS ignores the manifest
+name for the home-screen label and needs its own tag.
 
 ## Data & privacy model
 Everything Quill stores - the passcode hash, Talk/Light conversation history, Journal entries,
@@ -90,21 +109,26 @@ the manual backup/restore file in Settings.
 
 ## Tech stack
 One static page - no build step, no server, no framework - built to feel like an app rather than a
-website: full-bleed on a phone, a fixed tablet-sized card centered on anything roomier
-(laptop/desktop), and no page-level scrolling anywhere (only each chat log itself scrolls). Screens
-are plain `div`s toggled by JS, not separate pages.
+website: full-bleed on a phone, and on anything roomier (tablet/laptop/desktop) a card that scales
+up to nearly the full viewport height while staying page-shaped - it grows taller with the screen
+rather than wider, so it never looks like a stretched phone view. There's no page-level scrolling
+anywhere (only each chat log itself scrolls), and it's installable as a PWA (see below). Screens are
+plain `div`s toggled by JS, not separate pages.
 
 - `index.html` - all markup for every screen (lock, onboarding, home/menu, Journal, Talk to Quill,
   Entries, Calendar, Settings), the bottom tab bar, and the support-resources/confirmation overlays.
 - `styles.css` - all styling: the leather-and-paper diary look, the passcode keypad and lockout
-  progress ring, chat bubbles, the mood-color system, the calendar grid, and the signature/waveform
+  progress ring, chat bubbles, the mood-color system, the calendar grid, the signature/waveform
   animation (CSS `transform`/`opacity` only, so it stays on the compositor thread and never touches
-  layout).
+  layout), and the responsive device-frame sizing.
 - `app.js` - everything else: passcode hashing and lock-state machine, screen navigation and the tab
   bar, Quill's personas (Reflect/Light/Wind down) and the Groq API calls, crisis-phrase detection,
-  mood/favorites/calendar logic, conversation storage, backup/restore, and the hold-to-talk voice
-  logic. Has a placeholder, `__GROQ_API_KEY_PLACEHOLDER__`, substituted with the real key at deploy
-  time (`.github/workflows/deploy.yml`, on push to `main`).
+  mood/favorites/calendar logic, conversation storage, backup/restore, the tap-to-talk voice logic,
+  and the on-screen-keyboard viewport fix (keeps the frame from jumping when a text field is
+  focused on mobile). Has a placeholder, `__GROQ_API_KEY_PLACEHOLDER__`, substituted with the real
+  key at deploy time (`.github/workflows/deploy.yml`, on push to `main`).
+- `manifest.json` - the PWA manifest (name, icons, theme colors, standalone display mode) that makes
+  Quill installable to a home screen.
 
 ## Local development
 There's no key baked in locally, since the real key only gets substituted in during deploy. To test
