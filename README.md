@@ -16,10 +16,21 @@ remembers, and stays. Think of Quill as a locked diary that talks back.
   everything, since there's no account or server to verify identity any other way. The 1.3-second
   hold is deliberate friction against accidentally wiping months of entries.
 - Day/Night appearance can be switched right from the lock screen, before you've even unlocked.
+- The passcode screen stays locked to portrait even if you rotate the phone, so the keypad never
+  relayouts mid-entry - once you're in, the rest of the app is free to rotate normally.
 
 ### Two ways in, from one home screen
-- **Journal** - fully private and local. Nothing you write here is ever sent anywhere; it's the
-  "just for you" side of the app, like a notes app under a lock.
+- **Journal** - fully private and local, and built like a proper notes app rather than one long
+  diary entry: a scrollable shelf of separate notes, each one titled automatically from its own
+  first line. Tap any note - today's or from months ago - to reopen and keep editing it; nothing is
+  locked once written. Notes save themselves as you type (and again the moment you navigate away),
+  so there's no save button, and a note left completely blank is quietly discarded rather than
+  cluttering the list. A "How did today feel?" mood check-in appears after writing in a note started
+  *today* specifically, not when you're editing something older. A floating trash button in the note
+  editor deletes a note for good, with a confirmation step first. Nothing written here is ever sent
+  anywhere. (Upgrading from an older version of Quill: your existing journal history is
+  automatically split into individual, individually-editable notes the first time the app loads -
+  nothing is lost or merged.)
 - **Talk to Quill** - AI-backed, with three tones in one screen (a segmented toggle at the top):
   - **Reflect** - the default. Type or tap the mic to talk; Quill remembers recent mood check-ins
     and responds with that context in mind.
@@ -111,22 +122,28 @@ the manual backup/restore file in Settings.
 One static page - no build step, no server, no framework - built to feel like an app rather than a
 website: full-bleed on a phone, and on anything roomier (tablet/laptop/desktop) a card that scales
 up to nearly the full viewport height while staying page-shaped - it grows taller with the screen
-rather than wider, so it never looks like a stretched phone view. There's no page-level scrolling
-anywhere (only each chat log itself scrolls), and it's installable as a PWA (see below). Screens are
-plain `div`s toggled by JS, not separate pages.
+rather than wider, so it never looks like a stretched phone view. Scrolling is contained to each
+screen's own content (a chat log, the Journal's note list, Entries, Settings), with the page itself
+as a fallback scroll container so a short viewport or a rotated phone never permanently hides
+anything behind a fixed-height panel. Double-tap-to-zoom is disabled (`touch-action`) and the layout
+tracks the real visible viewport height so the on-screen keyboard doesn't shove the page around.
+It's installable as a PWA (see below). Screens are plain `div`s toggled by JS, not separate pages.
 
-- `index.html` - all markup for every screen (lock, onboarding, home/menu, Journal, Talk to Quill,
-  Entries, Calendar, Settings), the bottom tab bar, and the support-resources/confirmation overlays.
+- `index.html` - all markup for every screen (lock, onboarding, home/menu, Journal list, Journal
+  note editor, Talk to Quill, Entries, Calendar, Settings), the bottom tab bar, and the
+  support-resources/confirmation overlays.
 - `styles.css` - all styling: the leather-and-paper diary look, the passcode keypad and lockout
-  progress ring, chat bubbles, the mood-color system, the calendar grid, the signature/waveform
-  animation (CSS `transform`/`opacity` only, so it stays on the compositor thread and never touches
-  layout), and the responsive device-frame sizing.
+  progress ring, chat bubbles, the Journal's note cards and floating new-note/delete buttons, the
+  mood-color system, the calendar grid, the signature/waveform animation (CSS `transform`/`opacity`
+  only, so it stays on the compositor thread and never touches layout), and the responsive
+  device-frame sizing.
 - `app.js` - everything else: passcode hashing and lock-state machine, screen navigation and the tab
-  bar, Quill's personas (Reflect/Light/Wind down) and the Groq API calls, crisis-phrase detection,
-  mood/favorites/calendar logic, conversation storage, backup/restore, the tap-to-talk voice logic,
-  and the on-screen-keyboard viewport fix (keeps the frame from jumping when a text field is
-  focused on mobile). Has a placeholder, `__GROQ_API_KEY_PLACEHOLDER__`, substituted with the real
-  key at deploy time (`.github/workflows/deploy.yml`, on push to `main`).
+  bar, portrait-orientation locking on the passcode screen only, Quill's personas
+  (Reflect/Light/Wind down) and the Groq API calls, crisis-phrase detection, mood/favorites/calendar
+  logic, conversation storage, the Journal's note CRUD/autosave/migration logic, backup/restore, the
+  tap-to-talk voice logic, and the on-screen-keyboard viewport fix (keeps the frame from jumping when
+  a text field is focused on mobile). Has a placeholder, `__GROQ_API_KEY_PLACEHOLDER__`, substituted
+  with the real key at deploy time (`.github/workflows/deploy.yml`, on push to `main`).
 - `manifest.json` - the PWA manifest (name, icons, theme colors, standalone display mode) that makes
   Quill installable to a home screen.
 
