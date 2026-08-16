@@ -1,15 +1,17 @@
-/* =========================================================================
-   Q.U.I.L.L — a private journal that talks back.
-   Single-page app: onboarding, a lock screen, a menu, a private local-only Journal,
-   an AI-backed Talk to Quill (text + voice), and a lighter chat mode.
-   ========================================================================= */
+// Q.U.I.L.L - a private journal that talks back.
+// one big file, no build step: lock screen, menu, Journal (local only),
+// Talk to Quill (AI, text + voice), and a lighter chat mode.
 
-/* ---------- Backend: Groq's free chat tier (OpenAI-compatible) ---------- */
+// Groq's free chat tier (OpenAI-compatible)
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = "llama-3.3-70b-versatile";
-const EMBEDDED_API_KEY = "__GROQ_API_KEY_PLACEHOLDER__";
+
+// bring-your-own-key - everyone pastes their own free Groq key in Settings, stored
+// locally like everything else. no shared key baked into the app for someone to dig
+// out of the JS and burn through.
 function getApiKey() {
-  return EMBEDDED_API_KEY.startsWith("__") ? null : EMBEDDED_API_KEY;
+  const key = (localStorage.getItem(STORAGE_KEYS.groqKey) || "").trim();
+  return key || null;
 }
 
 const SYSTEM_PROMPT =
@@ -65,8 +67,7 @@ function detectCrisis(text) {
   return CRISIS_PHRASES.some(phrase => lower.includes(phrase));
 }
 
-// Repeating the exact same care note back-to-back in one heavy conversation reads
-// as robotic rather than caring - so it only re-shows after a quiet stretch.
+// don't repeat the care note back-to-back in one heavy conversation, feels robotic
 const CARE_NOTE_COOLDOWN_MS = 10 * 60 * 1000;
 const lastCareNoteAt = {};
 function canShowCareNote(logId) {
@@ -81,8 +82,8 @@ const CRISIS_CLASSIFIER_PROMPT =
   "YES or NO, and nothing else. Reply YES if the following message indicates the person may be " +
   "at risk of self-harm, suicide, or is in danger. Reply NO otherwise.";
 
-// A second, dedicated model call - separate from Quill's actual reply - so the check stays a
-// reliable single-word classification instead of a fragile marker embedded in conversational prose.
+// separate model call from Quill's actual reply, keeps this a clean yes/no
+// instead of trying to parse a marker out of conversational text
 async function checkCrisisWithModel(text) {
   const key = getApiKey();
   if (!key) return false;
@@ -144,8 +145,7 @@ async function callGroq(systemPrompt, history) {
   return data.choices[0].message.content;
 }
 
-// A brief toast-style status line that fades and clears itself, instead of
-// sitting there statically until the user happens to navigate away.
+// toast-style status line, fades and clears itself after a bit
 function showStatus(elId, text, ms) {
   const el = document.getElementById(elId);
   clearTimeout(el._fadeTimeoutId);
@@ -161,9 +161,8 @@ function showStatus(elId, text, ms) {
   }, ms || 3000);
 }
 
-/* ---------- Keep the app frame sized to the space actually visible above
-   the on-screen keyboard, instead of the full layout viewport, so the
-   keyboard covers content rather than squashing/shifting it ---------- */
+// size the app to the space actually visible above the keyboard, not the
+// full layout viewport - keyboard covers content instead of squashing it
 function syncAppHeight() {
   const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   document.documentElement.style.setProperty("--app-height", vh + "px");
@@ -174,10 +173,8 @@ if (window.visualViewport) {
 }
 syncAppHeight();
 
-/* ---------- Orientation: locked to portrait while the passcode screen is
-   up, free to rotate everywhere else in the app. Best-effort - the Screen
-   Orientation API isn't available in every browser (notably iOS Safari),
-   so this quietly does nothing there instead of erroring. ---------- */
+// portrait-locked on the passcode screen, free everywhere else. best-effort -
+// iOS Safari doesn't have the orientation API, so this just no-ops there
 function lockPortraitOrientation() {
   if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock("portrait").catch(() => {});
@@ -189,7 +186,7 @@ function unlockOrientation() {
   }
 }
 
-/* ---------- Screen navigation ---------- */
+// screen navigation
 function openScreen(id) {
   const previousActive = document.querySelector(".screen.active");
   if (previousActive && previousActive.id === "settingsScreen" && id !== "settingsScreen") {
@@ -206,6 +203,8 @@ function openScreen(id) {
 
   if (id === "menuScreen") {
     renderWeekStrip();
+    renderActivityLine();
+    renderTalkCardLock();
   } else if (id === "talkScreen") {
     resetTalkMode();
     talkPromptBtn.disabled = talkInput.value.trim().length > 0;
@@ -224,6 +223,7 @@ function openScreen(id) {
     populateVoiceSelect();
     document.getElementById("rateSlider").value = loadRate();
     renderRateValue();
+    renderApiKeyStatus();
   }
 }
 
@@ -231,7 +231,18 @@ document.querySelectorAll("[data-screen]").forEach(el => {
   el.addEventListener("click", () => openScreen(el.dataset.screen));
 });
 
-/* ---------- Global bottom tab bar ---------- */
+// Talk to Quill's menu card blurs out until a key is added, and jumps to
+// Settings instead of Talk while it's locked
+function renderTalkCardLock() {
+  const locked = !getApiKey();
+  document.getElementById("talkCard").classList.toggle("locked", locked);
+  document.getElementById("talkCardLockOverlay").hidden = !locked;
+}
+document.getElementById("talkCard").addEventListener("click", () => {
+  openScreen(getApiKey() ? "talkScreen" : "settingsScreen");
+});
+
+// bottom tab bar
 const TAB_SCREEN_MAP = {
   privateJournalScreen: "privateJournalScreen",
   journalEditorScreen: "privateJournalScreen",
@@ -249,10 +260,9 @@ function syncTabBar(id, chrome) {
   });
 }
 
-/* ---------- Storage keys ----------
-   Everything Quill persists, in one place. forgotPasscode() wipes an explicit
-   subset of these (content + security bookkeeping) - not theme/fontSize/voice/rate,
-   which are device preferences, not things "Quill remembers about you". */
+// everything Quill persists, in one place. forgotPasscode() only wipes the
+// content + security keys below - theme/fontSize/voice/rate are just device
+// prefs, not things "Quill remembers about you"
 const STORAGE_KEYS = {
   pinHash: "quill_pin_hash",
   talk: "quill_journal", // the Talk-to-Quill conversation (text + voice share one thread)
@@ -260,6 +270,7 @@ const STORAGE_KEYS = {
   light: "quill_light",
   moods: "quill_moods",
   favorites: "quill_favorites",
+  groqKey: "quill_groq_key",
   theme: "quill_theme",
   fontSize: "quill_font_size",
   voice: "quill_voice",
@@ -268,7 +279,7 @@ const STORAGE_KEYS = {
   lockoutUntil: "quill_lockout_until"
 };
 
-/* ---------- Passcode lock ---------- */
+// passcode lock
 const PIN_LEN = 6;
 
 const lockScreenEl = document.getElementById("lockScreen");
@@ -308,8 +319,8 @@ function getLockoutRemaining() {
   return Math.max(0, until - Date.now());
 }
 
-// Returns true (and shows/keeps showing the countdown) while a lockout is active
-// in a state where a passcode is actually being verified; false otherwise.
+// true (and keeps the countdown on screen) while a lockout is active during
+// actual passcode verification, false otherwise
 function updateLockoutUI() {
   const verifying = lockState === "unlock" || lockState === "change-verify";
   const remaining = verifying ? getLockoutRemaining() : 0;
@@ -350,8 +361,7 @@ let lockState = localStorage.getItem(STORAGE_KEYS.pinHash) ? "unlock" : "setup";
 document.getElementById(lockState === "setup" ? "onboardingScreen" : "lockScreen").classList.add("active");
 if (lockState === "unlock") lockPortraitOrientation();
 
-// A brief branded splash, like a native app cold-starting - shown for a beat
-// even though the real screen underneath is already ready, then faded out.
+// fake a native cold-start splash for a beat, then fade it out
 const splashScreenEl = document.getElementById("splashScreen");
 setTimeout(() => {
   splashScreenEl.classList.add("splashHide");
@@ -524,6 +534,7 @@ const CONTENT_STORAGE_KEYS = [
   STORAGE_KEYS.light,
   STORAGE_KEYS.moods,
   STORAGE_KEYS.favorites,
+  STORAGE_KEYS.groqKey,
   STORAGE_KEYS.failedAttempts,
   STORAGE_KEYS.lockoutUntil
 ];
@@ -555,8 +566,7 @@ document.getElementById("forgotConfirmOverlay").addEventListener("click", e => {
 
 document.getElementById("forgotExportBtn").addEventListener("click", exportEntries);
 
-// A single tap here permanently erases the diary, so it takes a deliberate hold
-// (not a tap) to guard against a panic-tap wipe.
+// a hold, not a tap - this wipes the whole diary, don't let a stray tap do it
 const HOLD_CONFIRM_MS = 1300;
 const forgotConfirmBtn = document.getElementById("forgotConfirmBtn");
 let holdConfirmTimeoutId = null;
@@ -595,9 +605,8 @@ document.getElementById("keypad").addEventListener("click", e => {
   }
   renderDots();
 
-  // Auto-submit the moment the passcode is fully entered - no need to also tap
-  // Unlock/Continue/Save, matching how a native passcode screen behaves. A short
-  // delay lets the last dot actually fill in before the screen moves on.
+  // auto-submit once all digits are in, like a real passcode screen -
+  // small delay so the last dot actually renders before we move on
   if (currentPin.length === PIN_LEN) {
     setTimeout(submitPin, 150);
   }
@@ -637,7 +646,7 @@ cancelChangeBtn.addEventListener("click", () => {
 renderLockSub();
 renderDots();
 
-/* ---------- Conversation storage ---------- */
+// conversation storage
 function loadHistory(key) {
   try {
     const raw = localStorage.getItem(key);
@@ -654,7 +663,7 @@ let mainHistory = loadHistory(STORAGE_KEYS.talk);
 let lightHistory = loadHistory(STORAGE_KEYS.light);
 
 const MOOD_LEVELS = [1, 2, 3, 4, 5];
-// Screen-reader labels only - the visible design stays icon-only, no text legend.
+// just for aria-labels - the UI itself stays icon-only, no text legend
 const MOOD_LABELS = { 1: "Rough", 2: "Low", 3: "Okay", 4: "Good", 5: "Great" };
 const MOOD_COLOR_VARS = { 1: "var(--mood-1)", 2: "var(--mood-2)", 3: "var(--mood-3)", 4: "var(--mood-4)", 5: "var(--mood-5)" };
 
@@ -694,7 +703,7 @@ function toggleFavorite(dayKey) {
   saveFavorites();
 }
 
-/* ---------- Rendering messages into a chat log ---------- */
+// rendering messages into a chat log
 const lastDividerDay = {};
 
 function dayKeyOf(ts) {
@@ -770,7 +779,7 @@ function renderLog(logId, history, emptyText) {
   history.forEach(m => appendMessage(logId, m.role === "user" ? "user" : "quill", m.content, m.ts));
 }
 
-/* ---------- Sending a message (shared by Talk to Quill and Light chat) ---------- */
+// sending a message (shared by Talk to Quill and Light chat)
 function appendErrorWithRetry(logId, text, onRetry) {
   const logEl = document.getElementById(logId);
   const wrap = document.createElement("div");
@@ -792,6 +801,24 @@ function appendErrorWithRetry(logId, text, onRetry) {
   return wrap;
 }
 
+function appendNoKeyMessage(logId) {
+  const logEl = document.getElementById(logId);
+  const wrap = document.createElement("div");
+  wrap.className = "msg system errorWithRetry";
+  const textSpan = document.createElement("span");
+  textSpan.textContent = "Quill needs a free Groq API key to reply - add one in Settings.";
+  wrap.appendChild(textSpan);
+  const goBtn = document.createElement("button");
+  goBtn.type = "button";
+  goBtn.className = "retryBtn";
+  goBtn.textContent = "Open Settings";
+  goBtn.addEventListener("click", () => openScreen("settingsScreen"));
+  wrap.appendChild(goBtn);
+  logEl.appendChild(wrap);
+  logEl.scrollTop = logEl.scrollHeight;
+  return wrap;
+}
+
 async function attemptReply(logId, history, storageKey, systemPrompt, speakReply) {
   const thinkingEl = appendThinking(logId);
   try {
@@ -805,7 +832,7 @@ async function attemptReply(logId, history, storageKey, systemPrompt, speakReply
     thinkingEl.remove();
     const retry = () => attemptReply(logId, history, storageKey, systemPrompt, speakReply);
     if (err.message === "no-api-key") {
-      appendMessage(logId, "system", "Quill's connection isn't set up on this deployment yet.");
+      appendNoKeyMessage(logId);
     } else if (err.message === "groq-timeout") {
       appendErrorWithRetry(logId, "That's taking longer than expected.", retry);
     } else {
@@ -824,8 +851,8 @@ async function sendToQuill(text, logId, history, storageKey, systemPrompt, speak
     appendCareNote(logId);
     markCareNoteShown(logId);
   }
-  // Model-based backstop, fire-and-forget: catches indirect phrasing/typos the
-  // keyword list misses. Runs in parallel, never blocks or delays Quill's reply.
+  // fire-and-forget model backstop for phrasing the keyword list misses -
+  // runs alongside, never blocks or delays the actual reply
   checkCrisisWithModel(text).then(isCrisis => {
     if (isCrisis && !careNoteShown && canShowCareNote(logId)) {
       careNoteShown = true;
@@ -837,11 +864,10 @@ async function sendToQuill(text, logId, history, storageKey, systemPrompt, speak
   await attemptReply(logId, history, storageKey, systemPrompt, speakReply);
 }
 
-/* ---------- Journal: private, local-only notes (no network calls at all) ----------
-   A shelf of separate notes, Notes-app style, rather than one append-only log -
-   any note can be reopened and edited later. Titles/previews are always derived
-   live from a note's content (first line / rest), never stored, so an edited
-   first line can't drift out of sync with a separately-saved title. */
+// Journal notes - fully local, no network calls. A shelf of separate notes
+// (Notes-app style) instead of one giant log, so any note can be reopened and
+// edited. Title/preview are always derived from the content itself, never
+// stored, so they can't go stale if the first line changes.
 function deriveNoteTitle(content) {
   const firstLine = (content || "").split("\n")[0].trim();
   return firstLine ? truncate(firstLine, 60) : "Untitled note";
@@ -855,9 +881,9 @@ function generateNoteId() {
   return "n_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
 }
 
-// Old data was one flat, ever-growing array of {content, ts}. Migrates each
-// old entry into its own independently-editable note. Guarded by "already has
-// an id", so this is idempotent and safe to run on every load.
+// old data was one flat, ever-growing array of {content, ts} - migrate each
+// entry into its own note. guarded on "already has an id" so it's safe to
+// just run this on every load
 function migratePrivateJournal(raw) {
   let changed = false;
   const migrated = raw.map(item => {
@@ -940,8 +966,8 @@ function buildJournalCard(note) {
   return card;
 }
 
-// Grows a compose textarea to fit its content (WhatsApp-style), up to the
-// max-height set in CSS - beyond that it scrolls internally like any textarea.
+// grows a textarea to fit its content as you type (WhatsApp-style), up to
+// the max-height in CSS - scrolls normally after that
 function autoGrowTextarea(el) {
   el.style.height = "auto";
   el.style.height = el.scrollHeight + "px";
@@ -1011,7 +1037,7 @@ document.getElementById("journalEditorBackBtn").addEventListener("click", () => 
 
 document.getElementById("journalNewBtn").addEventListener("click", openNewJournalNote);
 
-/* ---------- Journal: delete a note ---------- */
+// deleting a note
 document.getElementById("journalDeleteBtn").addEventListener("click", () => {
   document.getElementById("journalDeleteConfirmOverlay").classList.add("open");
 });
@@ -1029,11 +1055,8 @@ document.getElementById("journalDeleteConfirmBtn").addEventListener("click", () 
   openScreen("privateJournalScreen");
 });
 
-// Prompts for today's mood right after a save, since that's when a person is
-// already thinking about how the day went - skipped if today's mood is
-// already set, or once dismissed, so it never nags more than once a day.
-// Only fires for notes created today - editing an older note shouldn't ask
-// about today's mood.
+// ask about today's mood right after a save - skipped once it's set or
+// dismissed, and only for notes actually started today
 let journalMoodPromptDismissed = false;
 const journalMoodPromptEl = document.getElementById("journalMoodPrompt");
 const journalMoodPromptDotsEl = document.getElementById("journalMoodPromptDots");
@@ -1078,9 +1101,8 @@ journalPromptBtn.addEventListener("click", () => {
   journalAutosaveTimer = setTimeout(flushJournalEditorSave, JOURNAL_AUTOSAVE_DEBOUNCE_MS);
 });
 
-/* ---------- Talk to Quill's Reflect/Light/Wind down mode state ----------
-   The actual compose bar, send handler, and voice logic live further down
-   in the Talk to Quill section, since they're shared across all three modes. */
+// Reflect/Light/Wind down mode state - the compose bar, send handler, and
+// voice logic live further down, shared across all three modes
 const TALK_MODE_CONFIG = {
   reflect: { title: "Talk to Quill", placeholder: "Type, or tap the mic to talk...", history: () => mainHistory, storageKey: STORAGE_KEYS.talk, systemPrompt: SYSTEM_PROMPT, emptyText: "Nothing here yet - type, or tap the mic to talk to Quill." },
   light: { title: "A lighter page", placeholder: "Say hi...", history: () => lightHistory, storageKey: STORAGE_KEYS.light, systemPrompt: LIGHT_SYSTEM_PROMPT, emptyText: "Nothing here yet - say hi and see where it goes." },
@@ -1088,7 +1110,7 @@ const TALK_MODE_CONFIG = {
 };
 let talkMode = "reflect";
 
-/* ---------- Entries screen: timeline, search, mood ---------- */
+// Entries screen: timeline, search, mood
 function truncate(text, maxLen) {
   if (text.length <= maxLen) return text;
   const cut = text.slice(0, maxLen);
@@ -1107,8 +1129,8 @@ function groupEntriesByDay(history) {
   return Array.from(byDay.values()).sort((a, b) => a.ts - b.ts);
 }
 
-// A short, invisible-to-the-user system-prompt addition so Quill isn't starting
-// cold every conversation - just recent mood levels, not full entry content.
+// slip recent mood check-ins into the system prompt so Quill isn't starting
+// cold - just the mood levels, never the entry content itself
 function buildMoodContext() {
   const recentDays = groupEntriesByDay(mainHistory).slice(-5);
   const withMood = recentDays.filter(day => moods[day.dayKey]);
@@ -1117,7 +1139,7 @@ function buildMoodContext() {
   return "Recent mood check-ins: " + parts.join(", ") + ".";
 }
 
-// Plain-language summary of the last 7 days' moods - no scoring, no clinical framing.
+// plain-language summary of the last 7 days' moods, no scoring
 function buildWeeklyMoodTrend() {
   const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
   const cutoff = Date.now() - WEEK_MS;
@@ -1174,9 +1196,8 @@ function buildFaceIcon(level) {
   return svg;
 }
 
-// The last 7 calendar days, oldest first - independent of whether there's an
-// entry that day, so it's a calm always-visible strip rather than something
-// that pops in and out as history is written.
+// last 7 calendar days, oldest first - shown regardless of whether there's
+// an entry that day, so the strip doesn't jump around as history is written
 function renderWeekStrip() {
   const stripEl = document.getElementById("weekStrip");
   stripEl.innerHTML = "";
@@ -1200,6 +1221,70 @@ function renderWeekStrip() {
   }
 }
 document.getElementById("weekStrip").addEventListener("click", () => openScreen("calendarScreen"));
+
+// menu screen: one quiet activity line at a time - a streak first, then a
+// "wrote recently" count, then (only once it's gone quiet a while) a gentle
+// nudge. no guilt-tripping, and nothing shown for someone with zero history.
+function getWritingDayKeys() {
+  const keys = new Set();
+  mainHistory.forEach(m => { if (m.role === "user") keys.add(dayKeyOf(m.ts)); });
+  journalNotes.forEach(n => keys.add(dayKeyOf(n.updatedAt)));
+  return keys;
+}
+function computeCurrentStreak() {
+  const keys = getWritingDayKeys();
+  let streak = 0;
+  const cursor = new Date();
+  while (keys.has(dayKeyOf(cursor.getTime()))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+function computeWritingDaysInLastWeek() {
+  const keys = getWritingDayKeys();
+  let count = 0;
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    if (keys.has(dayKeyOf(d.getTime()))) count++;
+  }
+  return count;
+}
+function daysSinceLastWrite() {
+  let mostRecentTs = null;
+  mainHistory.forEach(m => {
+    if (m.role === "user") mostRecentTs = mostRecentTs === null ? m.ts : Math.max(mostRecentTs, m.ts);
+  });
+  journalNotes.forEach(n => {
+    mostRecentTs = mostRecentTs === null ? n.updatedAt : Math.max(mostRecentTs, n.updatedAt);
+  });
+  if (mostRecentTs === null) return null;
+  return Math.floor((Date.now() - mostRecentTs) / (24 * 60 * 60 * 1000));
+}
+const QUIET_NUDGE_THRESHOLD_DAYS = 3;
+
+function renderActivityLine() {
+  const el = document.getElementById("activityLine");
+  const streak = computeCurrentStreak();
+  let text = "";
+  if (streak >= 2) {
+    text = "You've written " + streak + " days in a row.";
+  } else {
+    const recentDays = computeWritingDaysInLastWeek();
+    if (recentDays >= 1) {
+      text = "Written " + recentDays + " of the last 7 days.";
+    } else {
+      const gap = daysSinceLastWrite();
+      if (gap !== null && gap >= QUIET_NUDGE_THRESHOLD_DAYS) {
+        text = "It's been a few days - this page is still here whenever you're ready.";
+      }
+    }
+  }
+  el.textContent = text;
+  el.hidden = !text;
+}
 
 function buildStarIcon() {
   const NS = "http://www.w3.org/2000/svg";
@@ -1329,7 +1414,7 @@ function renderEntriesScreen(filterText) {
   visibleDays.slice().reverse().forEach(day => listEl.appendChild(buildEntryCard(day)));
 }
 
-/* ---------- Entries screen: search + favorites filter (list only - calendar lives on its own screen) ---------- */
+// Entries screen: search + favorites filter (calendar has its own screen)
 let showFavoritesOnly = false;
 let calendarMonth = new Date();
 
@@ -1361,12 +1446,39 @@ function renderCalendarLegend() {
   });
 }
 
+// same idea as the weekly trend on Entries, just rolled up for the month
+function buildMonthlyMoodRecap(year, month) {
+  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let total = 0;
+  Object.keys(moods).forEach(key => {
+    const parts = key.split("-").map(Number);
+    if (parts[0] === year && parts[1] === month) {
+      counts[moods[key]]++;
+      total++;
+    }
+  });
+  if (!total) return "";
+  const dominantLevel = MOOD_LEVELS.reduce((best, lvl) => (counts[lvl] > counts[best] ? lvl : best), 1);
+  const dayWord = total === 1 ? "day" : "days";
+  const now = new Date();
+  const lead = year === now.getFullYear() && month === now.getMonth() ? "This month so far" : "That month";
+  return lead + ": mostly " + MOOD_LABELS[dominantLevel] + ", across " + total + " logged " + dayWord + ".";
+}
+
+function renderMonthlyRecap(year, month) {
+  const text = buildMonthlyMoodRecap(year, month);
+  const el = document.getElementById("monthlyRecap");
+  el.textContent = text;
+  el.hidden = !text;
+}
+
 function renderCalendarMonth() {
   renderCalendarLegend();
   const year = calendarMonth.getFullYear();
   const month = calendarMonth.getMonth();
   document.getElementById("calMonthLabel").textContent =
     calendarMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  renderMonthlyRecap(year, month);
 
   const dayMap = new Map(groupEntriesByDay(mainHistory).map(d => [d.dayKey, d]));
   const gridEl = document.getElementById("calendarGrid");
@@ -1433,7 +1545,7 @@ entrySearchInput.addEventListener("input", e => {
   searchDebounceId = setTimeout(() => renderEntriesScreen(value), 150);
 });
 
-/* ---------- Settings screen: appearance ---------- */
+// Settings: appearance
 function applyTheme(theme) {
   if (theme === "night") document.documentElement.setAttribute("data-theme", "night");
   else document.documentElement.removeAttribute("data-theme");
@@ -1493,10 +1605,10 @@ document.getElementById("fontSizeToggle").addEventListener("click", e => {
   if (btn) setFontSize(btn.dataset.fontChoice);
 });
 
-/* ---------- Settings screen: export / backup ---------- */
+// Settings: export / backup
 function buildExportText() {
   const days = groupEntriesByDay(mainHistory);
-  const lines = ["Q.U.I.L.L — exported entries", "Exported " + new Date().toLocaleString(), ""];
+  const lines = ["Q.U.I.L.L - exported entries", "Exported " + new Date().toLocaleString(), ""];
   days.forEach(day => {
     const moodSuffix = moods[day.dayKey] ? " (mood: " + moods[day.dayKey] + "/5)" : "";
     lines.push("=== " + formatDayLabel(day.ts) + moodSuffix + " ===");
@@ -1520,9 +1632,8 @@ function exportEntries() {
 
 document.getElementById("exportBtn").addEventListener("click", exportEntries);
 
-/* ---------- Settings screen: backup & restore ----------
-   Distinct from "Download my entries" above, which is a human-readable .txt.
-   This is a structured, restorable snapshot of everything QUILL has stored. */
+// Settings: backup & restore - a full restorable snapshot, different from
+// the plain-text export above
 function buildBackupData() {
   return {
     version: 2, // v2: privateJournal is now an array of {id, content, createdAt, updatedAt} notes
@@ -1587,16 +1698,40 @@ document.getElementById("restoreConfirmBtn").addEventListener("click", e => {
   const data = pendingRestoreData;
   localStorage.setItem(STORAGE_KEYS.talk, JSON.stringify(data.talk || []));
   localStorage.setItem(STORAGE_KEYS.light, JSON.stringify(data.light || []));
-  // Works for both old (flat {content, ts}) and new (note-object) backups -
-  // loadPrivateJournal() migrates old-shape data transparently on reload.
+  // handles both old (flat {content, ts}) and new (note-object) backups -
+  // loadPrivateJournal() migrates the old shape on reload
   localStorage.setItem(STORAGE_KEYS.privateJournal, JSON.stringify(data.privateJournal || []));
   localStorage.setItem(STORAGE_KEYS.moods, JSON.stringify(data.moods || {}));
   localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify(data.favorites || []));
   location.reload();
 });
 
-/* ---------- Talk to Quill: text + tap-to-talk in one compose bar,
-   shared across the Reflect / Light / Wind down modes ---------- */
+// Settings: Groq API key (BYOK)
+const apiKeyInputEl = document.getElementById("apiKeyInput");
+const apiKeyRemoveBtn = document.getElementById("apiKeyRemoveBtn");
+
+function renderApiKeyStatus() {
+  const hasKey = !!getApiKey();
+  document.getElementById("apiKeyStatus").textContent = hasKey ? "Connected - Quill can reply." : "Not connected yet.";
+  apiKeyRemoveBtn.disabled = !hasKey;
+}
+
+document.getElementById("apiKeySaveBtn").addEventListener("click", () => {
+  const value = apiKeyInputEl.value.trim();
+  if (!value) return;
+  localStorage.setItem(STORAGE_KEYS.groqKey, value);
+  apiKeyInputEl.value = "";
+  renderApiKeyStatus();
+});
+
+apiKeyRemoveBtn.addEventListener("click", () => {
+  localStorage.removeItem(STORAGE_KEYS.groqKey);
+  apiKeyInputEl.value = "";
+  renderApiKeyStatus();
+});
+
+// Talk to Quill: text + tap-to-talk in one compose bar, shared across
+// the Reflect / Light / Wind down modes
 const talkInput = document.getElementById("talkInput");
 const talkMicSendBtn = document.getElementById("talkMicSend");
 const talkSigEl = document.getElementById("talkSig");
@@ -1723,8 +1858,7 @@ function startListening() {
   talkMicSendBtn.classList.add("listening");
   setVoiceState("listening");
   recognizer.start();
-  // Safety net in case recognition never fires onend, which could otherwise
-  // leave the mic "listening" forever.
+  // in case recognition never fires onend - don't leave the mic stuck listening
   listenSafetyTimeoutId = setTimeout(stopListening, MAX_LISTEN_MS);
 }
 
@@ -1781,9 +1915,8 @@ function getPreferredVoice() {
     const match = voices.find(v => v.name === saved.name && v.lang === saved.lang);
     if (match) return match;
   }
-  // "Nicky" is a warm, kid-friendly system voice on Apple platforms - an opportunistic
-  // default for this app's primary (App Store) target, not a general-purpose choice.
-  // It's absent everywhere else, so this just falls through to the en-US match below.
+  // "Nicky" is a nice default on Apple platforms, this app's main target -
+  // absent everywhere else, so this just falls through to any en-US voice
   return voices.find(v => v.name.includes("Nicky")) || voices.find(v => v.lang === "en-US") || null;
 }
 
@@ -1799,7 +1932,7 @@ function speakText(text) {
   window.speechSynthesis.speak(utterance);
 }
 
-/* ---------- Settings screen: voice + speech rate ---------- */
+// Settings: voice + speech rate
 const voiceSelectEl = document.getElementById("voiceSelect");
 const rateSliderEl = document.getElementById("rateSlider");
 const rateValueEl = document.getElementById("rateValue");

@@ -78,6 +78,10 @@ remembers, and stays. Think of Quill as a locked diary that talks back.
 - **Appearance** - Day or Night theme.
 - **Text size** - Small, Default, or Large.
 - **Security** - change your passcode.
+- **Talk to Quill** - paste your own free Groq API key to turn on Quill's replies. Stored locally
+  like everything else here - nobody but Groq ever sees it, and only when a message is actually
+  sent. No key means Journal and the rest of the app still work; you just won't get replies until
+  one's added.
 - **Your data** - download a human-readable `.txt` of your entries, or back up everything (Talk
   history, Journal, moods, favorites) to a single JSON file and restore it later - useful for moving
   to a new device, since there's no cloud sync. Restoring fully replaces what's on the device and
@@ -113,10 +117,12 @@ name for the home-screen label and needs its own tag.
 
 ## Data & privacy model
 Everything Quill stores - the passcode hash, Talk/Light conversation history, Journal entries,
-moods, and favorites - lives only in your browser's `localStorage`. There's no account and no
-server. Journal content is never sent anywhere, full stop; Talk to Quill and Light/Wind down
-messages are sent to Groq's API to get Quill's replies. The only way to move data between devices is
-the manual backup/restore file in Settings.
+moods, favorites, and your Groq API key - lives only in your browser's `localStorage`. There's no
+account and no server, and no key shared between installs; each person brings their own. Journal
+content is never sent anywhere, full stop; Talk to Quill and Light/Wind down messages are sent to
+Groq's API, using your key, to get Quill's replies. The only way to move data between devices is the
+manual backup/restore file in Settings (the API key isn't included in that file - it stays
+per-device, like the passcode).
 
 ## Tech stack
 One static page - no build step, no server, no framework - built to feel like an app rather than a
@@ -142,17 +148,16 @@ It's installable as a PWA (see below). Screens are plain `div`s toggled by JS, n
   (Reflect/Light/Wind down) and the Groq API calls, crisis-phrase detection, mood/favorites/calendar
   logic, conversation storage, the Journal's note CRUD/autosave/migration logic, backup/restore, the
   tap-to-talk voice logic, and the on-screen-keyboard viewport fix (keeps the frame from jumping when
-  a text field is focused on mobile). Has a placeholder, `__GROQ_API_KEY_PLACEHOLDER__`, substituted
-  with the real key at deploy time (`.github/workflows/deploy.yml`, on push to `main`).
+  a text field is focused on mobile). Reads the Groq key straight out of `localStorage` - nothing
+  baked in at build time, nothing for the deploy workflow to inject.
 - `manifest.json` - the PWA manifest (name, icons, theme colors, standalone display mode) that makes
   Quill installable to a home screen.
 
 ## Local development
-There's no key baked in locally, since the real key only gets substituted in during deploy. To test
-locally with a real key, temporarily replace `__GROQ_API_KEY_PLACEHOLDER__` in `app.js` with your
-key, use the page, then revert the edit before committing (never commit a real key). Without a key,
-the app still runs fully - lock/unlock, Journal, Entries, Calendar, and Settings all work offline;
-only Quill's actual replies need the key.
+No setup needed to run the app - it's bring-your-own-key, same locally as in production. Open the
+page, paste a free Groq key into Settings > Talk to Quill, and replies work immediately. Without a
+key, the app still runs fully - lock/unlock, Journal, Entries, Calendar, and Settings all work
+offline; only Quill's actual replies need one.
 
 Serve it as a static site, e.g.:
 ```

@@ -67,8 +67,7 @@ body{
 }
 .display{ font-family:'Caveat', cursive; }
 
-/* Brief branded splash on launch, like an app cold-starting - covers
-   everything until the real first screen is ready underneath it. */
+/* fake cold-start splash, covers everything until the real screen's ready */
 .splashScreen{
   position:fixed; inset:0; z-index:999;
   display:flex; align-items:center; justify-content:center;
@@ -90,8 +89,7 @@ body{
   .splashScreen{ transition:none; }
 }
 
-/* The whole app lives inside the leather cover: edge-to-edge on a phone,
-   a fixed tablet-sized card centered on anything roomy enough. */
+/* edge-to-edge on a phone, a fixed card centered on anything roomier */
 .deviceFrame{
   width:100%;
   height:100vh;
@@ -104,9 +102,8 @@ body{
 }
 @media (min-width: 700px) and (min-height: 700px){
   .deviceFrame{
-    /* Nearly fill the viewport height, but tie width to height (capped, and
-       never past 90% of the viewport width) so wide monitors don't stretch
-       the card into a landscape shape - it should just read as a tall page. */
+    /* width tied to height (capped, never past 90vw) so wide monitors don't
+       stretch this into landscape - should still read as a tall page */
     width:clamp(440px, min(52vh, 90vw), 640px);
     height:calc(var(--app-height, 100dvh) * 0.97);
     border-radius:26px;
@@ -135,14 +132,13 @@ body{
   background:rgba(122,48,48,0.22); pointer-events:none;
 }
 
-/* ---------- Screens ---------- */
-/* position:relative makes .screen itself the containing block for any
-   absolutely-positioned child (the journal FAB, lockThemeBtn, confirm
-   overlays) - without it, .screen only *accidentally* acts as one while its
-   fadeIn animation is mid-flight (a non-"none" transform value creates a
-   containing block), then silently hands off to .page once the animation
-   settles, at a different, larger box - causing children positioned via
-   `bottom` to jump down after their entrance animation finishes. */
+/* Screens */
+/* position:relative here matters - without it .screen only accidentally
+   acts as the containing block for its absolutely-positioned children
+   (journal FAB, lockThemeBtn, confirm overlays) while fadeIn is still
+   running (transform creates one), then hands off to .page once the
+   animation ends, at a bigger box - anything positioned via `bottom` jumps
+   the moment the entrance animation finishes. learned that one the hard way. */
 .screen{ display:none; flex-direction:column; flex:1; min-height:0; position:relative; animation:fadeIn 0.35s ease; }
 .screen.active{ display:flex; }
 @keyframes fadeIn{
@@ -150,7 +146,7 @@ body{
   to{ opacity:1; transform:translateY(0); }
 }
 
-/* ---------- The clasp (lock screen ornament) ---------- */
+/* the clasp (lock screen ornament) */
 .clasp{ width:44px; height:16px; background:var(--brass); border-radius:4px; margin:0 auto 16px; position:relative; box-shadow:0 2px 3px rgba(0,0,0,0.25); }
 .clasp::after{
   content:""; position:absolute; left:50%; top:50%; width:16px; height:16px; border-radius:50%;
@@ -161,10 +157,9 @@ body{
 .tagline{ text-align:center; font-size:10.5px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; margin:-2px 0 16px; font-family:'EB Garamond', serif; }
 .sub{ text-align:center; color:var(--ink-dim); font-size:calc(15px * var(--font-scale)); margin:9px 0 18px; font-style:italic; }
 
-/* ---------- Signature (brand motif + Quill's speaking indicator) ----------
-   speechSynthesis exposes no real audio waveform, so "reacting to speech" here
-   is a state-driven CSS animation, not amplitude analysis. Every animated
-   property is transform/opacity only, so it all runs on the compositor thread. */
+/* signature (brand motif + Quill's speaking indicator) - speechSynthesis
+   doesn't expose a real waveform, so this is a state-driven animation, not
+   actual amplitude. transform/opacity only, stays off the main thread. */
 .signature{ display:flex; align-items:center; justify-content:center; gap:8px; margin:16px 0 10px; }
 .signature.small{ gap:5px; margin:0; }
 .sig-dot{ width:9px; height:9px; border-radius:50%; background:var(--ink); flex-shrink:0; }
@@ -208,7 +203,7 @@ body{
   .signature.talking .sig-mouth{ animation:none; }
 }
 
-/* ---------- Onboarding screen ---------- */
+/* Onboarding screen */
 .onboardingItem{
   background:var(--paper-shadow); border:1px solid rgba(var(--ink-rgb),0.12);
   border-radius:10px; padding:14px 16px; margin-bottom:12px;
@@ -218,7 +213,7 @@ body{
   font-size:calc(13px * var(--font-scale)); color:var(--ink-dim); margin-top:2px; line-height:1.4;
 }
 
-/* ---------- Lock screen ---------- */
+/* Lock screen */
 .dots{ display:flex; justify-content:center; gap:14px; margin:18px 0; }
 .dot{ width:13px; height:13px; border-radius:50%; border:1.5px solid var(--wine); background:transparent; transition:background 0.15s; }
 .dot.filled{ background:var(--wine); }
@@ -267,7 +262,7 @@ body{
   80%{ transform:translateX(4px); }
 }
 
-/* ---------- Menu screen (table of contents) ---------- */
+/* Menu screen (table of contents) */
 .menuHeader{ text-align:center; margin-bottom:18px; }
 
 .weekStrip{
@@ -278,6 +273,8 @@ body{
 }
 .weekStrip:hover{ transform:translateY(-1px); background:var(--card-hover-bg); }
 .weekStripHint{ font-size:10.5px; color:var(--ink-dim); text-align:center; margin:4px 0 16px; font-style:italic; }
+.activityLine{ font-size:12px; color:var(--ink-dim); text-align:center; margin:-10px 0 16px; }
+.activityLine[hidden]{ display:none; }
 .weekStripDay{ flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; }
 .weekStripLabel{ font-size:10px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ink-dim); }
 .weekStripDay.today .weekStripLabel{ color:var(--wine); font-weight:700; }
@@ -311,6 +308,16 @@ body{
 .card.network .badge{ background:rgba(122,48,48,0.14); color:var(--wine); }
 .card .desc{ font-size:calc(12.5px * var(--font-scale)); color:var(--ink-dim); margin-top:2px; font-style:italic; }
 
+.card.locked .label, .card.locked .desc{ filter:blur(3px); user-select:none; }
+.cardLockOverlay{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:1;
+  background:var(--paper-shadow); border:1px solid rgba(var(--ink-rgb),0.2);
+  border-radius:20px; padding:6px 14px; max-width:80%;
+  font-size:calc(11.5px * var(--font-scale)); color:var(--ink); font-style:italic;
+  text-align:center; white-space:nowrap;
+}
+.cardLockOverlay[hidden]{ display:none; }
+
 .menuDivider{ height:1px; background:rgba(var(--ink-rgb),0.12); margin:6px 0 14px; }
 .utilityRow{ display:flex; gap:10px; margin-bottom:14px; }
 .utilityCard{
@@ -322,7 +329,7 @@ body{
 
 .disclaimer{ text-align:center; font-size:calc(11px * var(--font-scale)); color:var(--ink-dim); margin-top:auto; line-height:1.4; font-style:italic; }
 
-/* ---------- Chat screens ---------- */
+/* Chat screens */
 .chatHeader{ display:flex; align-items:center; gap:16px; margin-bottom:12px; position:relative; min-height:24px; }
 .backBtn{
   background:none; border:none; color:var(--wine); font-size:14px; letter-spacing:0.5px;
@@ -388,9 +395,8 @@ body{
 }
 .journalEditorTextarea:focus{ outline:none; }
 
-/* Floating action button, bottom-right of the page (like lockNowBtn, it's
-   positioned relative to .page and stays put while the content beneath it
-   scrolls) rather than a small header icon. */
+/* floating action button, bottom-right - relative to .page (like lockNowBtn)
+   so it stays put while the content under it scrolls */
 .journalFab{
   position:absolute; right:16px; bottom:16px; z-index:4;
   width:50px; height:50px; display:flex; align-items:center; justify-content:center;
@@ -448,7 +454,7 @@ button{
 }
 button:disabled{ opacity:0.5; cursor:default; }
 
-/* ---------- Entries screen ---------- */
+/* Entries screen */
 .entrySearch{
   border:1px solid rgba(var(--ink-rgb),0.25); background:var(--input-bg); color:var(--ink);
   border-radius:8px; padding:10px 12px; font-family:'EB Garamond', serif;
@@ -552,7 +558,7 @@ button:disabled{ opacity:0.5; cursor:default; }
 .calendarCell.future{ opacity:0.22; }
 .calendarDayNum{ line-height:1; }
 
-/* ---------- Settings screen ---------- */
+/* Settings screen */
 .settingsBody{ flex:1; min-height:140px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding:2px 2px 12px; }
 .settingsSection{
   background:var(--paper-shadow); border:1px solid rgba(var(--ink-rgb),0.12);
@@ -572,6 +578,13 @@ button:disabled{ opacity:0.5; cursor:default; }
 .segOption.active{ background:var(--wine); color:#FBF1E4; border-color:var(--wine); }
 
 .settingsBtn{ width:100%; margin-bottom:8px; }
+.apiKeyInput{
+  border:1px solid rgba(var(--ink-rgb),0.25); background:var(--input-bg); color:var(--ink);
+  border-radius:8px; padding:10px 12px; font-family:'EB Garamond', serif;
+  font-size:calc(14.5px * var(--font-scale)); margin-bottom:8px; width:100%;
+}
+.apiKeyActions{ display:flex; gap:8px; }
+.apiKeyActions .settingsBtn{ flex:1; }
 .settingsCaption{
   font-size:calc(11.5px * var(--font-scale)); color:var(--ink-dim); font-style:italic;
   margin:0; text-align:left;
@@ -590,7 +603,7 @@ button:disabled{ opacity:0.5; cursor:default; }
 .rateSlider{ flex:1; accent-color:var(--wine); }
 .rateValue{ font-size:13px; color:var(--ink-dim); min-width:38px; text-align:right; }
 
-/* ---------- Talk to Quill: mic/send compose button ---------- */
+/* Talk to Quill: mic/send compose button */
 .micSendBtn{
   width:44px; height:44px; flex-shrink:0; border-radius:50%; border:none;
   background:var(--wine); color:#FBF1E4; display:flex; align-items:center; justify-content:center;
@@ -610,7 +623,7 @@ button:disabled{ opacity:0.5; cursor:default; }
   .micSendBtn.listening{ animation:none; }
 }
 
-/* ---------- Lock button ---------- */
+/* Lock button */
 .lockNowBtn{
   position:absolute; top:10px; right:14px;
   display:flex; align-items:center; gap:6px;
@@ -622,7 +635,7 @@ button:disabled{ opacity:0.5; cursor:default; }
 .lockNowBtn[hidden]{ display:none; }
 .lockNowIcon{ width:14px; height:14px; flex-shrink:0; }
 
-/* ---------- Bottom tab bar ---------- */
+/* Bottom tab bar */
 .tabBar{
   display:flex; justify-content:space-around; flex-shrink:0;
   border-top:1px solid rgba(var(--ink-rgb),0.14); padding-top:8px; margin-top:8px;
@@ -646,7 +659,7 @@ button:disabled{ opacity:0.5; cursor:default; }
 .lockThemeBtn[data-theme="day"] .iconMoon{ display:block; }
 .lockThemeBtn[data-theme="night"] .iconSun{ display:block; }
 
-/* ---------- Confirmation overlay (destructive actions) ---------- */
+/* Confirmation overlay (destructive actions) */
 .confirmOverlay{
   position:absolute; inset:0; background:rgba(0,0,0,0.55); display:none;
   align-items:center; justify-content:center; padding:24px; z-index:20; border-radius:14px;

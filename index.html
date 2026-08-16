@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="description" content="Q.U.I.L.L. is a private, on-device journal with an AI companion that listens back — your entries stay local, your conversations are yours.">
+<meta name="description" content="Q.U.I.L.L. is a private, on-device journal with an AI companion that listens back - your entries stay local, your conversations are yours.">
 <meta name="theme-color" content="#3E2A1F">
 <title>Q.U.I.L.L</title>
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
@@ -59,6 +59,7 @@
         <div class="onboardingDesc">Text or speak, and Quill responds back - what you send goes to Groq's AI to make that possible.</div>
       </div>
       <button class="unlockBtn" id="onboardingStartBtn" type="button">Get started</button>
+      <p class="disclaimer">Quill listens, but isn't a therapist and isn't a substitute for the people in your life. It's here alongside them, not instead of them.</p>
     </div>
 
     <!-- ===================== LOCK SCREEN ===================== -->
@@ -142,14 +143,16 @@
 
       <div class="weekStrip" id="weekStrip"></div>
       <p class="weekStripHint">Tap to see the full calendar</p>
+      <p class="activityLine" id="activityLine" hidden></p>
 
       <button class="card local" data-screen="privateJournalScreen">
         <div class="label">Journal <span class="badge">on device</span></div>
         <div class="desc">Just for you - stays on this device</div>
       </button>
-      <button class="card network" data-screen="talkScreen">
+      <button class="card network" id="talkCard">
         <div class="label">Talk to Quill <span class="badge">AI-backed</span></div>
         <div class="desc">Reflect, chat lightly, or wind down - Quill responds back</div>
+        <div class="cardLockOverlay" id="talkCardLockOverlay" hidden>Add a free Groq key to unlock</div>
       </button>
       <div class="menuDivider"></div>
       <div class="utilityRow">
@@ -279,6 +282,7 @@
         <button id="calNextBtn" type="button" aria-label="Next month">&rsaquo;</button>
       </div>
       <div class="calendarLegend" id="calendarLegend"></div>
+      <p class="weeklyTrend" id="monthlyRecap" hidden></p>
       <p class="moodTip">Colors come from moods you log on the Entries screen - tap the face icon on any entry to set one.</p>
       <div class="calendarGrid" id="calendarGrid"></div>
     </div>
@@ -312,6 +316,17 @@
           <div class="settingsLabel">Security</div>
           <div class="settingsStatus" id="passcodeStatus"></div>
           <button class="settingsBtn" type="button" id="changePasscodeBtn">Change passcode</button>
+        </div>
+
+        <div class="settingsSection">
+          <div class="settingsLabel">Talk to Quill</div>
+          <div class="settingsStatus" id="apiKeyStatus"></div>
+          <input type="password" class="apiKeyInput" id="apiKeyInput" placeholder="Paste your Groq API key" autocomplete="off" spellcheck="false">
+          <div class="apiKeyActions">
+            <button class="settingsBtn" type="button" id="apiKeySaveBtn">Save key</button>
+            <button class="settingsBtn" type="button" id="apiKeyRemoveBtn">Remove key</button>
+          </div>
+          <p class="settingsCaption">Talk to Quill needs a free Groq API key to reply - <a href="https://console.groq.com/keys" target="_blank" rel="noopener">get one here</a>, no card needed. It's saved only in this browser, the same as everything else on this screen - nobody but Groq ever sees it, and only when Quill sends your message to get a reply.</p>
         </div>
 
         <div class="settingsSection">
