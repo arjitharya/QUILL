@@ -141,7 +141,10 @@ async function callGroq(systemPrompt, history) {
   } finally {
     clearTimeout(timeoutId);
   }
-  if (!res.ok) throw new Error("groq-error-" + res.status);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error("groq-error-" + res.status + ": " + body.slice(0, 300));
+  }
   const data = await res.json();
   return data.choices[0].message.content;
 }
@@ -814,6 +817,7 @@ async function attemptReply(logId, history, storageKey, systemPrompt, speakReply
     } else if (err.message === "groq-timeout") {
       appendErrorWithRetry(logId, "That's taking longer than expected.", retry);
     } else {
+      console.error("Quill reply failed:", err);
       appendErrorWithRetry(logId, "Couldn't reach Quill just now.", retry);
     }
   }
