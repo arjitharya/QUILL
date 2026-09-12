@@ -4,7 +4,7 @@
 
 // Groq's free chat tier (OpenAI-compatible)
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL = "openai/gpt-oss-120b";
 
 // shared key, baked in at deploy time: .github/workflows/deploy.yml substitutes this
 // placeholder with the GROQ_API_KEY repo secret before publishing to GitHub Pages.
