@@ -78,10 +78,6 @@ remembers, and stays. Think of Quill as a locked diary that talks back.
 - **Appearance** - Day or Night theme.
 - **Text size** - Small, Default, or Large.
 - **Security** - change your passcode.
-- **Talk to Quill** - paste your own free Groq API key to turn on Quill's replies. Stored locally
-  like everything else here - nobody but Groq ever sees it, and only when a message is actually
-  sent. No key means Journal and the rest of the app still work; you just won't get replies until
-  one's added.
 - **Your data** - download a human-readable `.txt` of your entries, or back up everything (Talk
   history, Journal, moods, favorites) to a single JSON file and restore it later - useful for moving
   to a new device, since there's no cloud sync. Restoring fully replaces what's on the device and
@@ -117,12 +113,17 @@ name for the home-screen label and needs its own tag.
 
 ## Data & privacy model
 Everything Quill stores - the passcode hash, Talk/Light conversation history, Journal entries,
-moods, favorites, and your Groq API key - lives only in your browser's `localStorage`. There's no
-account and no server, and no key shared between installs; each person brings their own. Journal
-content is never sent anywhere, full stop; Talk to Quill and Light/Wind down messages are sent to
-Groq's API, using your key, to get Quill's replies. The only way to move data between devices is the
-manual backup/restore file in Settings (the API key isn't included in that file - it stays
-per-device, like the passcode).
+moods, and favorites - lives only in your browser's `localStorage`. There's no account and no
+database. Journal content is never sent anywhere, full stop; Talk to Quill and Light/Wind down
+messages are sent to Groq's API, using a single shared key configured by whoever deploys this site
+(see [Deploying your own copy](#deploying-your-own-copy)), to get Quill's replies. The only way to
+move data between devices is the manual backup/restore file in Settings.
+
+**Note on the shared key:** because this is a static site with no server, the deployed `app.js`
+necessarily contains the API key in a form any visitor's browser can read (view-source, devtools
+network tab). Anyone who finds your deployed site could extract and reuse the key under your Groq
+account. This is fine for a low-traffic personal deployment, but don't reuse a key you care about
+protecting, and rotate it in Groq's console if you ever suspect it's leaked.
 
 ## Tech stack
 One static page - no build step, no server, no framework - built to feel like an app rather than a
@@ -148,16 +149,29 @@ It's installable as a PWA (see below). Screens are plain `div`s toggled by JS, n
   (Reflect/Light/Wind down) and the Groq API calls, crisis-phrase detection, mood/favorites/calendar
   logic, conversation storage, the Journal's note CRUD/autosave/migration logic, backup/restore, the
   tap-to-talk voice logic, and the on-screen-keyboard viewport fix (keeps the frame from jumping when
-  a text field is focused on mobile). Reads the Groq key straight out of `localStorage` - nothing
-  baked in at build time, nothing for the deploy workflow to inject.
+  a text field is focused on mobile). Holds the Groq key as a `__QUILL_GROQ_API_KEY__` placeholder
+  constant, substituted with the real key by the deploy workflow at publish time (see below) - never
+  committed to the repo.
 - `manifest.json` - the PWA manifest (name, icons, theme colors, standalone display mode) that makes
   Quill installable to a home screen.
 
+## Deploying your own copy
+`.github/workflows/deploy.yml` publishes to GitHub Pages on every push to `main`. Before it can
+give Quill working replies, add a repo secret:
+1. Get a free key at [console.groq.com/keys](https://console.groq.com/keys).
+2. In the repo, go to **Settings > Secrets and variables > Actions > New repository secret**.
+3. Name it `GROQ_API_KEY`, paste the key, save.
+4. Push to `main` (or re-run the workflow) - the deploy step substitutes it into `app.js` before
+   publishing.
+
+Without the secret set, the workflow fails fast with a clear error rather than deploying a broken
+build.
+
 ## Local development
-No setup needed to run the app - it's bring-your-own-key, same locally as in production. Open the
-page, paste a free Groq key into Settings > Talk to Quill, and replies work immediately. Without a
-key, the app still runs fully - lock/unlock, Journal, Entries, Calendar, and Settings all work
-offline; only Quill's actual replies need one.
+There's no build step locally, so `app.js` still has the `__QUILL_GROQ_API_KEY__` placeholder in
+place - the app runs fully (lock/unlock, Journal, Entries, Calendar, Settings) but Talk to Quill
+shows a "not configured" message instead of replying. To test replies locally, temporarily paste a
+real key into the `GROQ_API_KEY` constant near the top of `app.js` - just don't commit that change.
 
 Serve it as a static site, e.g.:
 ```

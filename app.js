@@ -6,12 +6,13 @@
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = "llama-3.3-70b-versatile";
 
-// bring-your-own-key - everyone pastes their own free Groq key in Settings, stored
-// locally like everything else. no shared key baked into the app for someone to dig
-// out of the JS and burn through.
+// shared key, baked in at deploy time: .github/workflows/deploy.yml substitutes this
+// placeholder with the GROQ_API_KEY repo secret before publishing to GitHub Pages.
+// left as the placeholder in local dev, which reads as "no key" below.
+const GROQ_API_KEY = "__QUILL_GROQ_API_KEY__";
+
 function getApiKey() {
-  const key = (localStorage.getItem(STORAGE_KEYS.groqKey) || "").trim();
-  return key || null;
+  return GROQ_API_KEY === "__QUILL_GROQ_API_KEY__" ? null : GROQ_API_KEY;
 }
 
 const SYSTEM_PROMPT =
@@ -204,7 +205,6 @@ function openScreen(id) {
   if (id === "menuScreen") {
     renderWeekStrip();
     renderActivityLine();
-    renderTalkCardLock();
   } else if (id === "talkScreen") {
     resetTalkMode();
     talkPromptBtn.disabled = talkInput.value.trim().length > 0;
@@ -223,23 +223,11 @@ function openScreen(id) {
     populateVoiceSelect();
     document.getElementById("rateSlider").value = loadRate();
     renderRateValue();
-    renderApiKeyStatus();
   }
 }
 
 document.querySelectorAll("[data-screen]").forEach(el => {
   el.addEventListener("click", () => openScreen(el.dataset.screen));
-});
-
-// Talk to Quill's menu card blurs out until a key is added, and jumps to
-// Settings instead of Talk while it's locked
-function renderTalkCardLock() {
-  const locked = !getApiKey();
-  document.getElementById("talkCard").classList.toggle("locked", locked);
-  document.getElementById("talkCardLockOverlay").hidden = !locked;
-}
-document.getElementById("talkCard").addEventListener("click", () => {
-  openScreen(getApiKey() ? "talkScreen" : "settingsScreen");
 });
 
 // bottom tab bar
@@ -270,7 +258,6 @@ const STORAGE_KEYS = {
   light: "quill_light",
   moods: "quill_moods",
   favorites: "quill_favorites",
-  groqKey: "quill_groq_key",
   theme: "quill_theme",
   fontSize: "quill_font_size",
   voice: "quill_voice",
@@ -534,7 +521,6 @@ const CONTENT_STORAGE_KEYS = [
   STORAGE_KEYS.light,
   STORAGE_KEYS.moods,
   STORAGE_KEYS.favorites,
-  STORAGE_KEYS.groqKey,
   STORAGE_KEYS.failedAttempts,
   STORAGE_KEYS.lockoutUntil
 ];
@@ -804,16 +790,8 @@ function appendErrorWithRetry(logId, text, onRetry) {
 function appendNoKeyMessage(logId) {
   const logEl = document.getElementById(logId);
   const wrap = document.createElement("div");
-  wrap.className = "msg system errorWithRetry";
-  const textSpan = document.createElement("span");
-  textSpan.textContent = "Quill needs a free Groq API key to reply - add one in Settings.";
-  wrap.appendChild(textSpan);
-  const goBtn = document.createElement("button");
-  goBtn.type = "button";
-  goBtn.className = "retryBtn";
-  goBtn.textContent = "Open Settings";
-  goBtn.addEventListener("click", () => openScreen("settingsScreen"));
-  wrap.appendChild(goBtn);
+  wrap.className = "msg system";
+  wrap.textContent = "Quill can't reply right now - this site isn't configured with an API key yet.";
   logEl.appendChild(wrap);
   logEl.scrollTop = logEl.scrollHeight;
   return wrap;
@@ -1704,30 +1682,6 @@ document.getElementById("restoreConfirmBtn").addEventListener("click", e => {
   localStorage.setItem(STORAGE_KEYS.moods, JSON.stringify(data.moods || {}));
   localStorage.setItem(STORAGE_KEYS.favorites, JSON.stringify(data.favorites || []));
   location.reload();
-});
-
-// Settings: Groq API key (BYOK)
-const apiKeyInputEl = document.getElementById("apiKeyInput");
-const apiKeyRemoveBtn = document.getElementById("apiKeyRemoveBtn");
-
-function renderApiKeyStatus() {
-  const hasKey = !!getApiKey();
-  document.getElementById("apiKeyStatus").textContent = hasKey ? "Connected - Quill can reply." : "Not connected yet.";
-  apiKeyRemoveBtn.disabled = !hasKey;
-}
-
-document.getElementById("apiKeySaveBtn").addEventListener("click", () => {
-  const value = apiKeyInputEl.value.trim();
-  if (!value) return;
-  localStorage.setItem(STORAGE_KEYS.groqKey, value);
-  apiKeyInputEl.value = "";
-  renderApiKeyStatus();
-});
-
-apiKeyRemoveBtn.addEventListener("click", () => {
-  localStorage.removeItem(STORAGE_KEYS.groqKey);
-  apiKeyInputEl.value = "";
-  renderApiKeyStatus();
 });
 
 // Talk to Quill: text + tap-to-talk in one compose bar, shared across

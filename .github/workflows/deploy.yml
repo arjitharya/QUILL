@@ -24,6 +24,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Inject Groq API key
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          if [ -z "$GROQ_API_KEY" ]; then
+            echo "::error::GROQ_API_KEY repo secret is not set (Settings > Secrets and variables > Actions)"
+            exit 1
+          fi
+          node -e '
+            const fs = require("fs");
+            const path = "app.js";
+            const placeholder = "__QUILL_GROQ_API_KEY__";
+            const src = fs.readFileSync(path, "utf8");
+            if (!src.includes(placeholder)) throw new Error("placeholder not found in app.js");
+            fs.writeFileSync(path, src.replace(placeholder, process.env.GROQ_API_KEY));
+          '
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

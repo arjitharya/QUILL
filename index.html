@@ -149,10 +149,9 @@
         <div class="label">Journal <span class="badge">on device</span></div>
         <div class="desc">Just for you - stays on this device</div>
       </button>
-      <button class="card network" id="talkCard">
+      <button class="card network" id="talkCard" data-screen="talkScreen">
         <div class="label">Talk to Quill <span class="badge">AI-backed</span></div>
         <div class="desc">Reflect, chat lightly, or wind down - Quill responds back</div>
-        <div class="cardLockOverlay" id="talkCardLockOverlay" hidden>Add a free Groq key to unlock</div>
       </button>
       <div class="menuDivider"></div>
       <div class="utilityRow">
@@ -316,17 +315,6 @@
           <div class="settingsLabel">Security</div>
           <div class="settingsStatus" id="passcodeStatus"></div>
           <button class="settingsBtn" type="button" id="changePasscodeBtn">Change passcode</button>
-        </div>
-
-        <div class="settingsSection">
-          <div class="settingsLabel">Talk to Quill</div>
-          <div class="settingsStatus" id="apiKeyStatus"></div>
-          <input type="password" class="apiKeyInput" id="apiKeyInput" placeholder="Paste your Groq API key" autocomplete="off" spellcheck="false">
-          <div class="apiKeyActions">
-            <button class="settingsBtn" type="button" id="apiKeySaveBtn">Save key</button>
-            <button class="settingsBtn" type="button" id="apiKeyRemoveBtn">Remove key</button>
-          </div>
-          <p class="settingsCaption">Talk to Quill needs a free Groq API key to reply - <a href="https://console.groq.com/keys" target="_blank" rel="noopener">get one here</a>, no card needed. It's saved only in this browser, the same as everything else on this screen - nobody but Groq ever sees it, and only when Quill sends your message to get a reply.</p>
         </div>
 
         <div class="settingsSection">
