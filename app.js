@@ -1,6 +1,6 @@
 // Q.U.I.L.L - a private journal that talks back.
 // one big file, no build step: lock screen, menu, Journal (local only),
-// Talk to Quill (AI, text + voice), and a lighter chat mode.
+// and Talk to Quill (AI, text + voice).
 
 // Groq's free chat tier (OpenAI-compatible)
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -28,17 +28,6 @@ const SYSTEM_PROMPT =
   "themselves, gently offer another way to look at it - a genuine, caring reframe, not a clinical exercise or " +
   "numbered steps. Ask it like a friend would ('is there another way to see that?' or 'what would you tell a " +
   "friend who said that about themselves?'), not like a worksheet - and only when it actually fits, not every time.";
-
-const LIGHT_SYSTEM_PROMPT =
-  "You are Quill in a lighter mood - easy banter, gentle humor, small talk, a good way to ease into the day. " +
-  "Keep replies short, playful and warm. The moment the conversation turns serious or heavy, drop the humor " +
-  "immediately and respond with the same care as a genuine friend, no jokes.";
-
-const WIND_DOWN_SYSTEM_PROMPT =
-  "You are Quill in wind-down mode - it's the end of the day and the person just wants to ease into rest. " +
-  "Keep replies short, soft, and unhurried, like a quiet bedtime chat with a friend. No jokes, no hype, no " +
-  "advice lists - just calm, warm presence. If something heavy comes up, respond with the same care as always, " +
-  "gently, without turning it into a big discussion right before bed.";
 
 const REFLECTION_PROMPTS = [
   "What's one thing that felt heavy today?",
@@ -258,7 +247,6 @@ const STORAGE_KEYS = {
   pinHash: "quill_pin_hash",
   talk: "quill_journal", // the Talk-to-Quill conversation (text + voice share one thread)
   privateJournal: "quill_private_journal", // fully local, never sent anywhere
-  light: "quill_light",
   moods: "quill_moods",
   favorites: "quill_favorites",
   theme: "quill_theme",
@@ -521,7 +509,6 @@ const CONTENT_STORAGE_KEYS = [
   STORAGE_KEYS.pinHash,
   STORAGE_KEYS.talk,
   STORAGE_KEYS.privateJournal,
-  STORAGE_KEYS.light,
   STORAGE_KEYS.moods,
   STORAGE_KEYS.favorites,
   STORAGE_KEYS.failedAttempts,
@@ -531,7 +518,6 @@ const CONTENT_STORAGE_KEYS = [
 function wipeAllContent() {
   CONTENT_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
   mainHistory = [];
-  lightHistory = [];
   journalNotes = [];
   moods = {};
   favorites = [];
@@ -649,7 +635,6 @@ function saveHistory(key, history) {
 }
 
 let mainHistory = loadHistory(STORAGE_KEYS.talk);
-let lightHistory = loadHistory(STORAGE_KEYS.light);
 
 const MOOD_LEVELS = [1, 2, 3, 4, 5];
 // just for aria-labels - the UI itself stays icon-only, no text legend
@@ -1053,8 +1038,11 @@ function maybeShowJournalMoodPrompt(note) {
     dot.type = "button";
     dot.className = "moodPickerDot";
     dot.setAttribute("aria-label", MOOD_LABELS[level]);
-    dot.title = MOOD_LABELS[level];
     dot.appendChild(buildFaceIcon(level));
+    const dotLabel = document.createElement("span");
+    dotLabel.className = "moodPickerLabel";
+    dotLabel.textContent = MOOD_LABELS[level];
+    dot.appendChild(dotLabel);
     dot.addEventListener("click", () => {
       moods[todayKey] = level;
       saveMoods();
@@ -1083,14 +1071,7 @@ journalPromptBtn.addEventListener("click", () => {
   journalAutosaveTimer = setTimeout(flushJournalEditorSave, JOURNAL_AUTOSAVE_DEBOUNCE_MS);
 });
 
-// Reflect/Light/Wind down mode state - the compose bar, send handler, and
-// voice logic live further down, shared across all three modes
-const TALK_MODE_CONFIG = {
-  reflect: { title: "Talk to Quill", placeholder: "Type, or tap the mic to talk...", history: () => mainHistory, storageKey: STORAGE_KEYS.talk, systemPrompt: SYSTEM_PROMPT, emptyText: "Nothing here yet - type, or tap the mic to talk to Quill." },
-  light: { title: "A lighter page", placeholder: "Say hi...", history: () => lightHistory, storageKey: STORAGE_KEYS.light, systemPrompt: LIGHT_SYSTEM_PROMPT, emptyText: "Nothing here yet - say hi and see where it goes." },
-  winddown: { title: "Wind down", placeholder: "Ease into the end of the day...", history: () => lightHistory, storageKey: STORAGE_KEYS.light, systemPrompt: WIND_DOWN_SYSTEM_PROMPT, emptyText: "Nothing here yet - ease into it whenever you're ready." }
-};
-let talkMode = "reflect";
+const TALK_EMPTY_TEXT = "Nothing here yet - type, or tap the mic to talk to Quill.";
 
 // Entries screen: timeline, search, mood
 function truncate(text, maxLen) {
@@ -1284,7 +1265,7 @@ function buildStarIcon() {
 }
 
 function closeAllMoodPickers() {
-  document.querySelectorAll(".moodPicker.open").forEach(p => p.classList.remove("open"));
+  document.querySelectorAll(".moodPicker.open:not(.alwaysOpen)").forEach(p => p.classList.remove("open"));
 }
 document.addEventListener("click", e => {
   if (!e.target.closest(".entryCard")) closeAllMoodPickers();
@@ -1311,8 +1292,11 @@ function buildEntryCard(day) {
     pickBtn.type = "button";
     pickBtn.className = "moodPickerDot" + (moods[day.dayKey] === level ? " selected" : "");
     pickBtn.setAttribute("aria-label", MOOD_LABELS[level]);
-    pickBtn.title = MOOD_LABELS[level];
     pickBtn.appendChild(buildFaceIcon(level));
+    const pickLabel = document.createElement("span");
+    pickLabel.className = "moodPickerLabel";
+    pickLabel.textContent = MOOD_LABELS[level];
+    pickBtn.appendChild(pickLabel);
     pickBtn.addEventListener("click", e => {
       e.stopPropagation();
       moods[day.dayKey] = level;
@@ -1321,22 +1305,26 @@ function buildEntryCard(day) {
     });
     picker.appendChild(pickBtn);
   });
+  const hasMood = !!moods[day.dayKey];
+  if (!hasMood) picker.classList.add("open", "alwaysOpen");
   card.appendChild(picker);
 
-  const moodDot = document.createElement("button");
-  moodDot.type = "button";
-  moodDot.className = "entryMoodDot";
-  const moodLabel = moods[day.dayKey] ? "Mood: " + MOOD_LABELS[moods[day.dayKey]] : "Set mood for this entry";
-  moodDot.setAttribute("aria-label", moodLabel);
-  moodDot.title = moodLabel;
-  moodDot.appendChild(buildFaceIcon(moods[day.dayKey]));
-  moodDot.addEventListener("click", e => {
-    e.stopPropagation();
-    const willOpen = !picker.classList.contains("open");
-    closeAllMoodPickers();
-    if (willOpen) picker.classList.add("open");
-  });
-  card.appendChild(moodDot);
+  if (hasMood) {
+    const moodDot = document.createElement("button");
+    moodDot.type = "button";
+    moodDot.className = "entryMoodDot";
+    const moodLabel = "Mood: " + MOOD_LABELS[moods[day.dayKey]] + " - tap to change";
+    moodDot.setAttribute("aria-label", moodLabel);
+    moodDot.title = moodLabel;
+    moodDot.appendChild(buildFaceIcon(moods[day.dayKey]));
+    moodDot.addEventListener("click", e => {
+      e.stopPropagation();
+      const willOpen = !picker.classList.contains("open");
+      closeAllMoodPickers();
+      if (willOpen) picker.classList.add("open");
+    });
+    card.appendChild(moodDot);
+  }
 
   const favoriteBtn = document.createElement("button");
   favoriteBtn.type = "button";
@@ -1362,17 +1350,6 @@ function renderEntriesScreen(filterText) {
   const trendEl = document.getElementById("weeklyTrend");
   trendEl.textContent = trendText;
   trendEl.hidden = !trendText;
-
-  const moodStripEl = document.getElementById("moodStrip");
-  moodStripEl.innerHTML = "";
-  days.forEach(day => {
-    const face = buildFaceIcon(moods[day.dayKey]);
-    face.classList.add("small");
-    face.setAttribute("title", formatDayLabel(day.ts));
-    moodStripEl.appendChild(face);
-  });
-
-  document.getElementById("moodTip").hidden = Object.keys(moods).length > 0;
 
   const visibleDays = days.filter(day => {
     if (showFavoritesOnly && !isFavorite(day.dayKey)) return false;
@@ -1403,8 +1380,6 @@ let calendarMonth = new Date();
 function resetEntriesView() {
   showFavoritesOnly = false;
   document.getElementById("favFilterBtn").classList.remove("active");
-  document.getElementById("moodStrip").hidden = false;
-  document.getElementById("moodTip").hidden = Object.keys(moods).length > 0;
 }
 
 document.getElementById("favFilterBtn").addEventListener("click", () => {
@@ -1456,6 +1431,7 @@ function renderMonthlyRecap(year, month) {
 
 function renderCalendarMonth() {
   renderCalendarLegend();
+  document.getElementById("calendarMoodTip").hidden = Object.keys(moods).length > 0;
   const year = calendarMonth.getFullYear();
   const month = calendarMonth.getMonth();
   document.getElementById("calMonthLabel").textContent =
@@ -1621,7 +1597,6 @@ function buildBackupData() {
     version: 2, // v2: privateJournal is now an array of {id, content, createdAt, updatedAt} notes
     exportedAt: Date.now(),
     talk: mainHistory,
-    light: lightHistory,
     privateJournal: journalNotes,
     moods: moods,
     favorites: favorites
@@ -1679,7 +1654,6 @@ document.getElementById("restoreConfirmBtn").addEventListener("click", e => {
   document.getElementById("restoreCancelBtn").disabled = true;
   const data = pendingRestoreData;
   localStorage.setItem(STORAGE_KEYS.talk, JSON.stringify(data.talk || []));
-  localStorage.setItem(STORAGE_KEYS.light, JSON.stringify(data.light || []));
   // handles both old (flat {content, ts}) and new (note-object) backups -
   // loadPrivateJournal() migrates the old shape on reload
   localStorage.setItem(STORAGE_KEYS.privateJournal, JSON.stringify(data.privateJournal || []));
@@ -1688,49 +1662,20 @@ document.getElementById("restoreConfirmBtn").addEventListener("click", e => {
   location.reload();
 });
 
-// Talk to Quill: text + tap-to-talk in one compose bar, shared across
-// the Reflect / Light / Wind down modes
+// Talk to Quill: text + tap-to-talk in one compose bar
 const talkInput = document.getElementById("talkInput");
 const talkMicSendBtn = document.getElementById("talkMicSend");
 const talkSigEl = document.getElementById("talkSig");
-const talkChatTitleEl = document.getElementById("talkChatTitle");
 let activeRecognizer = null;
 
 function buildTalkSystemPrompt() {
   const context = buildMoodContext();
-  const base = TALK_MODE_CONFIG[talkMode].systemPrompt;
-  return context ? base + "\n\n" + context : base;
-}
-
-function applyTalkMode() {
-  const config = TALK_MODE_CONFIG[talkMode];
-  document.querySelectorAll("#talkModeToggle .segOption").forEach(b => b.classList.toggle("active", b.dataset.mode === talkMode));
-  talkChatTitleEl.textContent = config.title;
-  talkInput.placeholder = config.placeholder;
-  renderLog("talkLog", config.history(), config.emptyText);
+  return context ? SYSTEM_PROMPT + "\n\n" + context : SYSTEM_PROMPT;
 }
 
 function resetTalkMode() {
-  talkMode = "reflect";
-  applyTalkMode();
-  syncTalkHint();
+  renderLog("talkLog", mainHistory, TALK_EMPTY_TEXT);
 }
-
-document.getElementById("talkModeToggle").addEventListener("click", e => {
-  const btn = e.target.closest(".segOption");
-  if (!btn) return;
-  talkMode = btn.dataset.mode;
-  applyTalkMode();
-});
-
-let talkHintDismissed = false;
-function syncTalkHint() {
-  document.getElementById("talkHint").hidden = talkHintDismissed;
-}
-document.getElementById("talkHintDismiss").addEventListener("click", () => {
-  talkHintDismissed = true;
-  syncTalkHint();
-});
 
 const voiceStatusEl = document.getElementById("voiceStatus");
 const VOICE_STATUS_TEXT = { listening: "Listening...", thinking: "Thinking...", talking: "Speaking..." };
@@ -1750,8 +1695,7 @@ async function handleTalkSend() {
   autoGrowTextarea(talkInput);
   talkMicSendBtn.classList.remove("hasText");
   talkMicSendBtn.disabled = true;
-  const config = TALK_MODE_CONFIG[talkMode];
-  await sendToQuill(text, "talkLog", config.history(), config.storageKey, buildTalkSystemPrompt(), false);
+  await sendToQuill(text, "talkLog", mainHistory, STORAGE_KEYS.talk, buildTalkSystemPrompt(), false);
   talkMicSendBtn.disabled = false;
 }
 
@@ -1798,8 +1742,7 @@ function startListening() {
   recognizer.onresult = async event => {
     const transcript = event.results[0][0].transcript;
     setVoiceState("thinking");
-    const config = TALK_MODE_CONFIG[talkMode];
-    await sendToQuill(transcript, "talkLog", config.history(), config.storageKey, buildTalkSystemPrompt(), true);
+    await sendToQuill(transcript, "talkLog", mainHistory, STORAGE_KEYS.talk, buildTalkSystemPrompt(), true);
   };
   recognizer.onerror = () => {
     setVoiceState("");

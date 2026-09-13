@@ -153,15 +153,6 @@
         <div class="label">Talk to Quill <span class="badge">AI-backed</span></div>
         <div class="desc">Reflect, chat lightly, or wind down - Quill responds back</div>
       </button>
-      <div class="menuDivider"></div>
-      <div class="utilityRow">
-        <button class="utilityCard" data-screen="entriesScreen">
-          <div class="utilityLabel">Your entries</div>
-        </button>
-        <button class="utilityCard" data-screen="settingsScreen">
-          <div class="utilityLabel">Settings</div>
-        </button>
-      </div>
 
       <p class="disclaimer">Quill listens, but isn't a therapist and isn't a substitute for the people in your life. It's here alongside them, not instead of them.</p>
     </div>
@@ -213,7 +204,7 @@
       </div>
     </div>
 
-    <!-- ===================== TALK TO QUILL SCREEN (merged Reflect / Light / Wind down) ===================== -->
+    <!-- ===================== TALK TO QUILL SCREEN ===================== -->
     <div class="screen" id="talkScreen">
       <div class="chatHeader">
         <button class="backBtn" data-screen="menuScreen">Back</button>
@@ -223,15 +214,6 @@
           <span class="sig-dot"></span>
         </div>
         <div class="chatTitle" id="talkChatTitle">Talk to Quill</div>
-      </div>
-      <div class="segToggle" id="talkModeToggle">
-        <button class="segOption active" type="button" data-mode="reflect">Reflect</button>
-        <button class="segOption" type="button" data-mode="light">Light</button>
-        <button class="segOption" type="button" data-mode="winddown">Wind down</button>
-      </div>
-      <div class="talkHint" id="talkHint" hidden>
-        <span>Tap the mic to talk, tap again to stop, or type and hit send.</span>
-        <button id="talkHintDismiss" type="button" aria-label="Dismiss">&times;</button>
       </div>
       <div class="chatLog" id="talkLog"></div>
       <p class="voiceStatus" id="voiceStatus" aria-live="polite" hidden></p>
@@ -259,13 +241,10 @@
         <div class="chatTitle">Entries</div>
       </div>
       <p class="weeklyTrend" id="weeklyTrend" hidden></p>
-      <input type="text" class="entrySearch" id="entrySearch" placeholder="Search your Talk to Quill history...">
-      <p class="entrySearchScope">Journal entries are private and not included here.</p>
       <div class="entryToolbar">
+        <input type="text" class="entrySearch" id="entrySearch" placeholder="Search history (Journal stays private)...">
         <button class="entryFavFilterBtn" id="favFilterBtn" type="button" aria-label="Show favorites only"></button>
       </div>
-      <div class="moodStrip" id="moodStrip"></div>
-      <p class="moodTip" id="moodTip" hidden>Tap the face on any entry to log how that day felt.</p>
       <div class="entryList" id="entryList"></div>
     </div>
 
@@ -282,7 +261,7 @@
       </div>
       <div class="calendarLegend" id="calendarLegend"></div>
       <p class="weeklyTrend" id="monthlyRecap" hidden></p>
-      <p class="moodTip">Colors come from moods you log on the Entries screen - tap the face icon on any entry to set one.</p>
+      <p class="moodTip" id="calendarMoodTip" hidden>Colors come from moods you log on the Entries screen - tap the face icon on any entry to set one.</p>
       <div class="calendarGrid" id="calendarGrid"></div>
     </div>
 
@@ -295,15 +274,13 @@
 
       <div class="settingsBody">
         <div class="settingsSection">
-          <div class="settingsLabel">Appearance</div>
+          <div class="settingsLabel">Display</div>
+          <div class="settingsSubLabel">Theme</div>
           <div class="segToggle" id="themeToggle">
             <button class="segOption" type="button" data-theme-choice="day">Day</button>
             <button class="segOption" type="button" data-theme-choice="night">Night</button>
           </div>
-        </div>
-
-        <div class="settingsSection">
-          <div class="settingsLabel">Text size</div>
+          <div class="settingsSubLabel">Text size</div>
           <div class="segToggle" id="fontSizeToggle">
             <button class="segOption" type="button" data-font-choice="small">Small</button>
             <button class="segOption" type="button" data-font-choice="default">Default</button>
@@ -319,12 +296,18 @@
 
         <div class="settingsSection">
           <div class="settingsLabel">Your data</div>
+          <p class="settingsCaption">Everything stays on this device - nothing is uploaded anywhere unless you save or send a file yourself.</p>
           <div class="settingsStatus" id="dataStatus"></div>
-          <button class="settingsBtn" type="button" id="exportBtn">Download my entries (.txt)</button>
-          <button class="settingsBtn" type="button" id="backupBtn">Back up everything (.json)</button>
-          <button class="settingsBtn" type="button" id="restoreBtn">Restore from backup (.json)</button>
+
+          <div class="settingsSubLabel">Back up &amp; restore</div>
+          <p class="settingsCaption">Saves your Journal, Talk to Quill chats, and moods to one file, so you don't lose anything if you lose this device or switch phones. Anyone who opens that file can read it, so keep it somewhere private - like you would a diary.</p>
+          <button class="settingsBtn" type="button" id="backupBtn">Save a backup</button>
+          <button class="settingsBtn" type="button" id="restoreBtn">Restore a backup</button>
           <input type="file" id="restoreFileInput" accept="application/json" hidden>
-          <p class="settingsCaption">Plain text and unencrypted JSON, not a proprietary format - readable in any text editor, but keep the file somewhere private.</p>
+
+          <div class="settingsSubLabel">Read your journal elsewhere</div>
+          <p class="settingsCaption">A plain copy of what you've written, to read or print outside the app.</p>
+          <button class="settingsBtn settingsBtnSecondary" type="button" id="exportBtn">Export as text</button>
         </div>
 
         <div class="settingsSection">
