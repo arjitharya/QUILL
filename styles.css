@@ -504,7 +504,6 @@ button:disabled{ opacity:0.5; cursor:default; }
 .moodPickerDot.selected{ background:rgba(var(--ink-rgb),0.12); box-shadow:0 0 0 1.5px var(--ink); }
 .moodPickerLabel{ font-size:calc(9px * var(--font-scale)); color:var(--ink-dim); line-height:1; }
 
-.calendarView[hidden]{ display:none; }
 .calendarNav{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 .calendarNav button{
   background:var(--paper-shadow); color:var(--ink); border:1px solid rgba(var(--ink-rgb),0.15);

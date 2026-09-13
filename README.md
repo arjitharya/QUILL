@@ -31,15 +31,10 @@ remembers, and stays. Think of Quill as a locked diary that talks back.
   anywhere. (Upgrading from an older version of Quill: your existing journal history is
   automatically split into individual, individually-editable notes the first time the app loads -
   nothing is lost or merged.)
-- **Talk to Quill** - AI-backed, with three tones in one screen (a segmented toggle at the top):
-  - **Reflect** - the default. Type or tap the mic to talk; Quill remembers recent mood check-ins
-    and responds with that context in mind.
-  - **Light** - easy banter and small talk, kept in its own conversation thread.
-  - **Wind down** - a calmer, end-of-day tone, sharing Light's thread.
-  Switching tones swaps both the conversation shown and where it's saved, but the same compose bar
-  (tap-to-talk mic that turns into a send button once you start typing) works across all three.
-  A one-time dismissible hint explains the tap-to-talk gesture the first time you open it each
-  session.
+- **Talk to Quill** - AI-backed. Type or tap the mic to talk; Quill remembers recent mood
+  check-ins and responds with that context in mind. The same compose bar (tap-to-talk mic that
+  turns into a send button once you start typing) handles both text and voice, and a "Need a
+  prompt?" button offers a random reflection prompt when the compose bar is empty.
 - The home screen's two cards are visually distinguished by trust model - Journal carries a moss
   "on device" badge, Talk to Quill a wine "AI-backed" badge - so the privacy story from onboarding
   is reinforced every time you look at the menu, not just read once during setup.
@@ -53,7 +48,7 @@ remembers, and stays. Think of Quill as a locked diary that talks back.
   Calendar.
 
 ### Entries, moods, and the calendar
-- **Entries** - a searchable list of your Talk to Quill (Reflect-mode) history, grouped by day.
+- **Entries** - a searchable list of your Talk to Quill history, grouped by day.
   Search is intentionally scoped to that history only - Journal entries stay private and are never
   indexed or shown here, which the screen says outright rather than leaving you to wonder why a
   Journal entry didn't turn up. Each day can be starred as a favorite (with a favorites-only filter)
@@ -112,11 +107,11 @@ field, plus an `apple-mobile-web-app-title` meta tag in `index.html`, since iOS 
 name for the home-screen label and needs its own tag.
 
 ## Data & privacy model
-Everything Quill stores - the passcode hash, Talk/Light conversation history, Journal entries,
+Everything Quill stores - the passcode hash, Talk to Quill conversation history, Journal entries,
 moods, and favorites - lives only in your browser's `localStorage`. There's no account and no
-database. Journal content is never sent anywhere, full stop; Talk to Quill and Light/Wind down
-messages are sent to Groq's API, using a single shared key configured by whoever deploys this site
-(see [Deploying your own copy](#deploying-your-own-copy)), to get Quill's replies. The only way to
+database. Journal content is never sent anywhere, full stop; Talk to Quill messages are sent to
+Groq's API, using a single shared key configured by whoever deploys this site (see
+[Deploying your own copy](#deploying-your-own-copy)), to get Quill's replies. The only way to
 move data between devices is the manual backup/restore file in Settings.
 
 **Note on the shared key:** because this is a static site with no server, the deployed `app.js`
@@ -145,8 +140,8 @@ It's installable as a PWA (see below). Screens are plain `div`s toggled by JS, n
   only, so it stays on the compositor thread and never touches layout), and the responsive
   device-frame sizing.
 - `app.js` - everything else: passcode hashing and lock-state machine, screen navigation and the tab
-  bar, portrait-orientation locking on the passcode screen only, Quill's personas
-  (Reflect/Light/Wind down) and the Groq API calls, crisis-phrase detection, mood/favorites/calendar
+  bar, portrait-orientation locking on the passcode screen only, Quill's persona and the Groq
+  API calls, crisis-phrase detection, mood/favorites/calendar
   logic, conversation storage, the Journal's note CRUD/autosave/migration logic, backup/restore, the
   tap-to-talk voice logic, and the on-screen-keyboard viewport fix (keeps the frame from jumping when
   a text field is focused on mobile). Holds the Groq key as a `__QUILL_GROQ_API_KEY__` placeholder
